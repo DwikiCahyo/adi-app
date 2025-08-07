@@ -1,0 +1,35 @@
+# Laravel 
+adi_app/vendor/
+adi_app/node_modules/
+adi_app/public/storage
+adi_app/storage/*.key
+adi_app/.env
+adi_app/.phpunit.result.cache
+
+# Laravel Mix / Vite
+adi_app/public/hot
+adi_app/public/mix-manifest.json
+adi_app/public/js/*.js
+adi_app/public/css/*.css
+
+# Cache & logs
+adi_app/storage/logs/*.log
+adi_app/storage/framework/cache/data/*
+adi_app/storage/framework/sessions/*
+adi_app/storage/framework/views/*
+
+# NPM/Yarn logs
+adi_app/npm-debug.log
+adi_app/yarn-debug.log*
+adi_app/yarn-error.log*
+
+# IDE / OS junk
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Docker-related (jika hanya untuk lokal)
+mysql_data/
