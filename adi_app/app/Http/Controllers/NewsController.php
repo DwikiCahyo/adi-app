@@ -66,4 +66,28 @@ class NewsController extends Controller {
         return view('dashboard', compact('news'));
     }
 
+    public function show(Request $request , News $news){
+        
+        $news -> load(['creating', 'updateing']);
+
+        Log::info("News show request", [
+            'news_id' => $news->id,
+            'news_slug' => $news->slug,
+            'title' => $news->title,
+            'expects_json' => $request->expectsJson(),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => new NewsResource($news),
+                'message' => 'Data news berhasil ditampilkan'
+            ]);
+        }
+
+
+    }
+
 }
