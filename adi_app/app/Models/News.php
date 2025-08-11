@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\RateLimiter;
+use App\Exceptions\TooManySlugAttemptsException;
 
 class News extends Model
 {
@@ -87,6 +89,23 @@ class News extends Model
 
     public function getRouteKeyName(): string {
         return 'slug';
+    }
+
+     public function resolveRouteBinding($value, $field = null)
+    {
+
+        $key = 'news_slug_attempts:' . request()->ip();
+
+    
+        if (RateLimiter::tooManyAttempts($key, 10)) {
+            throw new TooManySlugAttemptsException();
+        }
+
+        RateLimiter::hit($key, 60);
+
+        $news = $this->where($field ?? $this->getRouteKeyName(), $value)->first();
+
+        return $news;
     }
 
     public function setSlugAttribute($value): void {
