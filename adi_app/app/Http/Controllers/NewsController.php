@@ -52,9 +52,12 @@ class NewsController extends Controller {
                     ->get();
 
         if ($request->expectsJson()) {
+
+            $formattedNews = NewsResource::collection($news);
+
             return response()->json([
                 'success' => true,
-                'data'    => $news,
+                'data'    => $formattedNews,
                 'total'   => $news->count(),
                 'message' => 'Data News berhasil ditampilkan'
             ]);
