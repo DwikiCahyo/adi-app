@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\NewsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -16,6 +17,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('auth/login');
+});
+
+
+Route::prefix('news')->group(function() {
+    Route::get('/', [NewsController::class, 'index'])->name('index');
 });
 
 Route::get('/dashboard', function () {
