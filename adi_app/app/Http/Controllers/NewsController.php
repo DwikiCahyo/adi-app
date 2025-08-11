@@ -44,4 +44,23 @@ class NewsController extends Controller {
         return view('news.index',compact('news'));
     }
 
+    public function NewsAdmin(Request $request){
+        
+        $news = News::with(['creator', 'updater'])
+                    ->active()
+                    ->recent()
+                    ->get();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'data'    => $news,
+                'total'   => $news->count(),
+                'message' => 'Data News berhasil ditampilkan'
+            ]);
+        }
+
+        return view('dashboard', compact('news'));
+    }
+
 }

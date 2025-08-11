@@ -38,10 +38,10 @@
     {{-- Template --}}
     <template id="news-form-template">
         <div class="relative bg-white p-6 rounded-lg shadow-lg mb-8">
-            {{-- Tombol close di pojok kanan atas --}}
+            {{-- Tombol close di pojok kanan atas
             <button type="button" class="close-card absolute top-2 right-2 text-gray-400 hover:text-red-500">
                 ✕
-            </button>
+            </button> --}}
     
             <h3 class="text-lg font-semibold mb-4 text-gray-800">Tambah News Feed</h3>
             <form action="" method="POST" enctype="multipart/form-data">
