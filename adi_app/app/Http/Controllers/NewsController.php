@@ -67,8 +67,8 @@ class NewsController extends Controller {
     }
 
     public function show(Request $request , News $news){
-        
-        $news -> load(['creating', 'updateing']);
+
+       $news->load(['creator', 'updater']);
 
         Log::info("News show request", [
             'news_id' => $news->id,
