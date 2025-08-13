@@ -66,28 +66,48 @@ class NewsController extends Controller {
         return view('dashboard', compact('news'));
     }
 
-    public function show(Request $request , News $news){
-
-       $news->load(['creator', 'updater']);
+    public function show(Request $request, News $news)
+    {
+        $news->load(['creator', 'updater']);
 
         Log::info("News show request", [
-            'news_id' => $news->id,
-            'news_slug' => $news->slug,
-            'title' => $news->title,
+            'news_id'      => $news->id,
+            'news_slug'    => $news->slug,
+            'title'        => $news->title,
             'expects_json' => $request->expectsJson(),
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent()
+            'ip'           => $request->ip(),
+            'user_agent'   => $request->userAgent()
         ]);
+
+        $news->embed_url = $news->url
+            ? $this->convertVideoToEmbed($news->url)
+            : null;
 
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'data' => new NewsResource($news),
+                'data'    => new NewsResource($news),
                 'message' => 'Data news berhasil ditampilkan'
             ]);
         }
 
+        return view('news.show', compact('news'));
+    }
 
+    /**
+     * Convert video link to embeddable link.
+     */
+    private function convertVideoToEmbed($url)
+    {
+        if (preg_match('/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^\&\?]+)/', $url, $matches)) {
+            return 'https://www.youtube.com/embed/' . $matches[1];
+        }
+
+        if (preg_match('/vimeo\.com\/(\d+)/', $url, $matches)) {
+            return 'https://player.vimeo.com/video/' . $matches[1];
+        }
+
+        return $url; 
     }
 
 }
