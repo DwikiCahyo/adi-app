@@ -14,6 +14,7 @@ use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Str;
 
 
 class Handler extends ExceptionHandler
@@ -51,7 +52,6 @@ class Handler extends ExceptionHandler
             'method' => $request->method(),
             'ip' => $request->ip(),
             'expects_json' => $request->expectsJson(),
-            'request' => $request->json()->all()
         ]);
 
          if ($e instanceof TooManySlugAttemptsException) {
@@ -121,7 +121,7 @@ class Handler extends ExceptionHandler
             ], Response::HTTP_NOT_FOUND);
         }
         
-        return parent::render($request, $exception);
+         return $this->renderUniversalErrorView($request, Response::HTTP_NOT_FOUND, $exception); 
     }
 
      /**
@@ -137,7 +137,7 @@ class Handler extends ExceptionHandler
             ], Response::HTTP_NOT_FOUND);
         }
         
-        return parent::render($request, $exception);
+        return $this->renderUniversalErrorView($request, Response::HTTP_NOT_FOUND, $exception);
     }
 
     /**
@@ -228,5 +228,76 @@ class Handler extends ExceptionHandler
         }
         
         return 'error';
+    }
+
+        protected function renderUniversalErrorView(Request $request, int $statusCode, Throwable $exception, array $customData = [])
+    {
+        $data = array_merge([
+            'statusCode' => $statusCode,
+            'title' => $this->getErrorTitle($statusCode),
+            'message' => $this->getErrorMessage($statusCode, $exception),
+            'errorId' => $this->generateErrorId(),
+        ], $customData);
+
+        // Add exception details in debug mode
+        if (config('app.debug')) {
+            $data['details'] = get_class($exception) . ' in ' . basename($exception->getFile()) . ':' . $exception->getLine();
+            $data['trace'] = $exception->getTraceAsString();
+        }
+
+        return response()->view('exceptions.index', $data, $statusCode);
+    }
+
+     protected function getErrorTitle(int $statusCode): string
+    {
+        return match($statusCode) {
+            400 => 'Permintaan Tidak Valid',
+            401 => 'Akses Tidak Diizinkan', 
+            403 => 'Akses Ditolak',
+            404 => 'Halaman Tidak Ditemukan',
+            405 => 'Metode Tidak Diizinkan',
+            419 => 'Sesi Telah Berakhir',
+            422 => 'Data Tidak Valid',
+            429 => 'Terlalu Banyak Permintaan',
+            500 => 'Kesalahan Server Internal',
+            503 => 'Layanan Tidak Tersedia',
+            default => 'Terjadi Kesalahan'
+        };
+    }
+
+     protected function getErrorMessage(int $statusCode, Throwable $exception): string
+    {
+        // Use custom message if available
+        if (method_exists($exception, 'getMessage') && !empty($exception->getMessage())) {
+            // Don't expose sensitive information in production
+            if (!config('app.debug') && in_array($statusCode, [500, 503])) {
+                return $this->getDefaultErrorMessage($statusCode);
+            }
+            return $exception->getMessage();
+        }
+
+        return $this->getDefaultErrorMessage($statusCode);
+    }
+
+     protected function getDefaultErrorMessage(int $statusCode): string
+    {
+        return match($statusCode) {
+            400 => 'Data yang Anda kirim tidak sesuai format yang diharapkan.',
+            401 => 'Anda perlu login terlebih dahulu untuk mengakses halaman ini.',
+            403 => 'Anda tidak memiliki izin untuk mengakses halaman ini.',
+            404 => 'Halaman yang Anda cari tidak dapat ditemukan. Mungkin URL salah atau halaman telah dipindahkan.',
+            405 => 'Metode HTTP yang Anda gunakan tidak diizinkan untuk endpoint ini.',
+            419 => 'Sesi Anda telah berakhir untuk keamanan. Silakan muat ulang halaman.',
+            422 => 'Data yang Anda masukkan tidak valid. Silakan periksa kembali.',
+            429 => 'Anda telah mencoba terlalu banyak dalam waktu singkat. Silakan tunggu sebentar.',
+            500 => 'Terjadi kesalahan pada server. Tim kami akan segera memperbaikinya.',
+            503 => 'Layanan sedang dalam pemeliharaan. Silakan coba lagi nanti.',
+            default => 'Terjadi kesalahan yang tidak terduga. Silakan coba lagi nanti.'
+        };
+    }
+
+    protected function generateErrorId(): string
+    {
+        return strtoupper(Str::random(8)) . '-' . date('YmdHis');
     }
 }
