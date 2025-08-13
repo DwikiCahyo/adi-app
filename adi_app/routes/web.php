@@ -23,6 +23,7 @@ Route::get('/', function () {
 
 Route::prefix('news')->group(function() {
     Route::get('/', [NewsController::class, 'index'])->name('index');
+    Route::get('/{news}', [NewsController::class, 'show'])->name('show');
 });
 
 // Route::get('/dashboard', function () {
