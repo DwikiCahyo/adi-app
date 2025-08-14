@@ -9,7 +9,7 @@
                 <!-- Thumbnail -->
                 <a href="{{ route('show', $newsUser->slug) }}" class="block relative aspect-video">
                     <img 
-                        src="{{ $newsUser->thumbnail_url }}" 
+                        src="{{ $newsUser->thumbnail_url}}" 
                         alt="{{ $newsUser->title }}" 
                         class="w-full h-full object-cover"
                     >

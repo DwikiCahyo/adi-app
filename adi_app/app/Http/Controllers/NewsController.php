@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreNewsRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use App\Models\News;
 use App\Http\Resources\NewsResource;
+use Illuminate\Http\Response;
 
 class NewsController extends Controller {
 
@@ -44,7 +46,7 @@ class NewsController extends Controller {
     /**
      * Ambil thumbnail dari URL video
      */
-    private function getVideoThumbnail($url){
+     private function getVideoThumbnail($url){
         if (preg_match('/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^\&\?]+)/', $url, $matches)) {
             return 'https://img.youtube.com/vi/' . $matches[1] . '/hqdefault.jpg';
         }
@@ -120,6 +122,37 @@ class NewsController extends Controller {
         }
 
         return $url; 
+    }
+
+
+    public function store(StoreNewsRequest $request):JsonResponse
+    {
+        $validatedData = $request->validated();
+        $validatedData['created_by'] = auth()->id();
+        $validatedData['updated_by'] = auth()->id();
+
+        $news = News::create($validatedData);
+
+
+         Log::info("News created", [
+            'news_id' => $news->id,
+            'title' => $news->title,
+            'created_by' => auth()->id()
+        ]);
+
+        // if ($request->expectsJson()) {
+        //     return response()->json([
+        //         'success' => true,
+        //         'data' => new NewsResource($news->load(['creator', 'updater'])),
+        //         'message' => 'News berhasil dibuat'
+        //     ], 201);
+        // }
+
+        return response()->json([
+                'success' => true,
+                'data' => new NewsResource($news->load(['creator', 'updater'])),
+                'message' => 'News berhasil dibuat'
+        ], Response::HTTP_CREATED);
     }
 
 }

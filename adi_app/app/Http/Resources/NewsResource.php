@@ -23,7 +23,7 @@ class NewsResource extends JsonResource
             'title' => $this -> title,
             'content' => $this->content,
             'url' => $this->url,
-            'url_thumbnail' => $this ->getYoutubeThumbnailUrl($videoId),
+            'url_thumbnail' => $this ->getVideoThumbnail($this->url),
             'slug' => $this->slug,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
@@ -49,13 +49,16 @@ class NewsResource extends JsonResource
         return null;
     }
 
-    protected function getYoutubeThumbnailUrl(string $videoId): string
-    {
-        return "https://img.youtube.com/vi/{$videoId}/hqdefault.jpg";
-    }
+    private function getVideoThumbnail($url){
+        if (preg_match('/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^\&\?]+)/', $url, $matches)) {
+            return 'https://img.youtube.com/vi/' . $matches[1] . '/hqdefault.jpg';
+        }
 
-     protected function getDefaultThumbnailUrl(): string
-    {
-        return 'https://via.placeholder.com/480x360?text=No+Thumbnail';
+        if (preg_match('/vimeo\.com\/(\d+)/', $url, $matches)) {
+            return 'https://vumbnail.com/' . $matches[1] . '.jpg';
+        }
+
+        return asset('images/default-thumbnail.jpg');
     }
+    
 }

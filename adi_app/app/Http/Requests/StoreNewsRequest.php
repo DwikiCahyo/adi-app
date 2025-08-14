@@ -11,7 +11,7 @@ class StoreNewsRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return auth()->check();
     }
 
     /**
@@ -22,9 +22,34 @@ class StoreNewsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['required' , 'string'],
-            'url' => ['required' , 'string'],
-            'content' => ['required' , 'string']
+            'title' => ['required' , 'string',"max:1500" , "min:3"],
+            'url' => ['required' , 'string', 'url'],
+            'content' => ['required' , 'string', "max:3000"]
+        ];
+    }
+
+    public function attributes():array
+    {
+        return [
+            'title' => 'judul',
+            'url' => 'url',
+            'content' => 'konten',
+        ];
+    }
+
+    public function messages():array
+    {
+        return [
+            'title.required' => 'Judul wajib diisi',
+            'title.string' => 'Judul harus bertipe text',
+            'title.max' => 'Judul maksimal 1500 karakter',
+            'title.min' => "Judul minimal 3 karakter",
+            'url.required' => 'URL wajib diisi',
+            'url.string' => 'URL harus bertipe text',
+            'url.url' => 'Format URL tidak valid. Gunakan format: https://contoh.com',
+            'content.required' => 'Kontent wajib diisi',
+            'content.string' => 'Kontent harus bertipe text',
+            'content.max' => 'Kontent maksimal 3000 karakter',
         ];
     }
 }

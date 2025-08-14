@@ -24,10 +24,13 @@ Route::prefix('auth')->group(function () {
 
 Route::get('news' , [NewsController::class,'index']);
 Route::get('news/{news:slug}', [NewsController::class, 'show']);
+Route::post('news', [NewsController::class, 'store']);
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+Route::middleware('auth:sanctum')->post('news', [NewsController::class, 'store']);
 
 
 
