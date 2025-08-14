@@ -5,10 +5,15 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         @foreach($news as $newsUser)
             <div class="flex flex-col rounded-lg overflow-hidden shadow bg-white hover:shadow-lg transition-shadow duration-200">
-                <!-- Logo -->
-                <div class="bg-gray-100 p-4 flex items-center justify-center">
-                    <img src="{{ asset('images/logo.png') }}" alt="Abbalove" class="h-10 object-contain">
-                </div>
+                
+                <!-- Thumbnail -->
+                <a href="{{ route('show', $newsUser->slug) }}" class="block relative aspect-video">
+                    <img 
+                        src="{{ $newsUser->thumbnail_url }}" 
+                        alt="{{ $newsUser->title }}" 
+                        class="w-full h-full object-cover"
+                    >
+                </a>
 
                 <!-- Content -->
                 <div class="p-6 flex flex-col flex-1">
