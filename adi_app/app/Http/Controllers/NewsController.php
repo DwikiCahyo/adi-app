@@ -12,37 +12,50 @@ use App\Http\Resources\NewsResource;
 class NewsController extends Controller {
 
 
-    public function index(Request $request):View|JsonResponse {
+    public function index(Request $request): View|JsonResponse{
+        $news = News::with(['creator', 'updater'])
+                    ->active()
+                    ->recent()
+                    ->get()
+                    ->map(function ($item) {
+                        $item->thumbnail_url = $this->getVideoThumbnail($item->url);
+                        return $item;
+                    });
 
-        $query = News::with(['creator', 'updater'])
-                 ->active()
-                 ->recent();
-
-        $news = $query -> get();
-       
-
-        Log::info("request log" , [
-            'request'  => $request,
-            'query' => $news
+        Log::info("News index request", [
+            'total_news' => $news->count(),
+            'expects_json' => $request->expectsJson(),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent()
         ]);
 
-
-        if($request -> expectsJson()){
-
-             $formattedNews = NewsResource::collection($news);
-
-             return response()->json(
-                [
-                    'success' => true,
-                    'data' => $formattedNews,
-                    'total' => $news->count(),
-                    'message' => 'Data News Barhasil ditampilkan'
-                ]
-             );
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'data'    => NewsResource::collection($news),
+                'total'   => $news->count(),
+                'message' => 'Data news berhasil ditampilkan'
+            ]);
         }
 
-        return view('news.index',compact('news'));
+        return view('news.index', compact('news'));
     }
+
+    /**
+     * Ambil thumbnail dari URL video
+     */
+    private function getVideoThumbnail($url){
+        if (preg_match('/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^\&\?]+)/', $url, $matches)) {
+            return 'https://img.youtube.com/vi/' . $matches[1] . '/hqdefault.jpg';
+        }
+
+        if (preg_match('/vimeo\.com\/(\d+)/', $url, $matches)) {
+            return 'https://vumbnail.com/' . $matches[1] . '.jpg';
+        }
+
+        return asset('images/default-thumbnail.jpg');
+    }
+
 
     public function NewsAdmin(Request $request){
         
@@ -66,8 +79,7 @@ class NewsController extends Controller {
         return view('dashboard', compact('news'));
     }
 
-    public function show(Request $request, News $news)
-    {
+    public function show(Request $request, News $news){
         $news->load(['creator', 'updater']);
 
         Log::info("News show request", [
