@@ -12,17 +12,13 @@
     <div class="py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-            {{-- Flash message --}}
             <div id="flash-message" class="hidden mb-4 p-4 bg-green-100 text-green-700 rounded-lg shadow transition-opacity duration-500"></div>
 
-            {{-- Button show/hide form mini --}}
             <div class="mb-6 flex justify-end">
                 <button id="show-add-card" class="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700">Tambah News Feed</button>
             </div>
 
-            {{-- Grid berita --}}
             <div id="news-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {{-- Card tambah mini akan dimasukkan di sini --}}
             </div>
         </div>
     </div>
@@ -58,207 +54,250 @@
     </div>
 
 <script>
-const newsList = document.getElementById('news-list');
-const flashMessage = document.getElementById('flash-message');
+    const newsList = document.getElementById('news-list');
+    const flashMessage = document.getElementById('flash-message');
 
-const modal = document.getElementById('edit-modal');
-const modalContent = modal.querySelector('div');
-const editForm = document.getElementById('edit-news-form');
-const editId = document.getElementById('edit-id');
-const editTitle = document.getElementById('edit-title');
-const editContent = document.getElementById('edit-content');
-const editUrl = document.getElementById('edit-url');
-const closeModalBtn = document.getElementById('close-modal');
+    const modal = document.getElementById('edit-modal');
+    const modalContent = modal.querySelector('div');
+    const editForm = document.getElementById('edit-news-form');
+    const editId = document.getElementById('edit-id');
+    const editTitle = document.getElementById('edit-title');
+    const editContent = document.getElementById('edit-content');
+    const editUrl = document.getElementById('edit-url');
+    const closeModalBtn = document.getElementById('close-modal');
 
-const showAddCardBtn = document.getElementById('show-add-card');
-let addCardVisible = false;
+    const showAddCardBtn = document.getElementById('show-add-card');
+    let addCardVisible = false;
 
-// Fungsi flash message
-function showFlash(message) {
-    flashMessage.textContent = message;
-    flashMessage.classList.remove('hidden');
-    flashMessage.classList.add('opacity-100');
-    setTimeout(() => {
-        flashMessage.classList.add('hidden');
-        flashMessage.classList.remove('opacity-100');
-    }, 3000);
-}
-
-// Load initial news dari backend
-const initialNews = @json($news ?? []);
-initialNews.forEach(n => newsList.appendChild(createCard(n, true)));
-
-// Fungsi buat card berita
-function createCard(news, animate=false) {
-    const card = document.createElement('div');
-    card.className = 'bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition transform hover:-translate-y-1 opacity-0 scale-95';
-    card.dataset.id = news.id;
-    card.innerHTML = `
-        <h4 class="text-lg font-semibold mb-2">${news.title}</h4>
-        <p class="text-gray-700 mb-2">${news.content.substring(0,100)}</p>
-        <a href="${news.url}" target="_blank" class="text-blue-600 underline mb-4 block">${news.url}</a>
-        <div class="flex justify-end gap-2">
-            <button class="edit-btn px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">Edit</button>
-            <button class="delete-btn px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Hapus</button>
-        </div>
-    `;
-    if(animate){
-        requestAnimationFrame(() => {
-            card.classList.remove('opacity-0','scale-95');
-            card.classList.add('opacity-100','scale-100');
-        });
+    // Fungsi flash message
+    function showFlash(message) {
+        flashMessage.textContent = message;
+        flashMessage.classList.remove('hidden');
+        flashMessage.classList.add('opacity-100');
+        setTimeout(() => {
+            flashMessage.classList.add('hidden');
+            flashMessage.classList.remove('opacity-100');
+        }, 3000);
     }
 
-    // Edit button -> buka modal
-    card.querySelector('.edit-btn').addEventListener('click', () => {
-        editId.value = news.id;
-        editTitle.value = news.title;
-        editContent.value = news.content;
-        editUrl.value = news.url;
-        modal.classList.remove('hidden');
-        requestAnimationFrame(() => {
-            modal.classList.remove('opacity-0');
-            modalContent.classList.remove('scale-95');
-            modalContent.classList.add('scale-100');
+    // Load initial news dari backend
+    const initialNews = @json($news ?? []);
+    initialNews.forEach(n => newsList.appendChild(createCard(n, true)));
+
+    // Fungsi buat card berita
+    function createCard(news, animate=false) {
+        const card = document.createElement('div');
+        card.className = 'bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition transform hover:-translate-y-1 opacity-0 scale-95';
+        card.dataset.id = news.id;
+
+        // Cek apakah URL YouTube
+        let mediaHtml = '';
+        const ytMatch = news.url ? news.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/) : null;
+        if (ytMatch) {
+            const videoId = ytMatch[1];
+            mediaHtml = `
+                <div class="mb-4 relative group">
+                    <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" class="block relative">
+                        <img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" 
+                            alt="YouTube Thumbnail" 
+                            class="w-full rounded-lg shadow-md group-hover:opacity-80 transition"/>
+                    </a>
+                </div>
+            `;
+        } else if (news.url) {
+            mediaHtml = `<a href="${news.url}" target="_blank" class="text-blue-600 underline mb-4 block">${news.url}</a>`;
+        }
+
+        card.innerHTML = `
+            <h4 class="text-lg font-semibold mb-2">${news.title}</h4>
+            
+            ${mediaHtml}
+            <div class="flex justify-end gap-2">
+                <button class="edit-btn px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">Edit</button>
+                <button class="delete-btn px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Hapus</button>
+            </div>
+        `;
+        if(animate){
+            requestAnimationFrame(() => {
+                card.classList.remove('opacity-0','scale-95');
+                card.classList.add('opacity-100','scale-100');
+            });
+        }
+
+        // Edit button -> buka modal
+        card.querySelector('.edit-btn').addEventListener('click', () => {
+            editId.value = news.id;
+            editTitle.value = news.title;
+            editContent.value = news.content;
+            editUrl.value = news.url;
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            });
+        });
+
+        // Delete button
+        card.querySelector('.delete-btn').addEventListener('click', async () => {
+            if(!confirm('Yakin ingin menghapus berita ini?')) return;
+            try {
+                const resDelete = await fetch(`/news/${news.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                        'Accept': 'application/json'
+                    }
+                });
+                const dataDelete = await resDelete.json();
+                if(dataDelete.success){
+                    card.classList.add('opacity-0','scale-95');
+                    setTimeout(() => card.remove(),300);
+                    showFlash('Berita berhasil dihapus!');
+                } else {
+                    alert('Gagal menghapus berita');
+                }
+            } catch(err) {
+                console.error(err);
+                alert('Terjadi kesalahan saat hapus');
+            }
+        });
+
+        return card;
+    }
+
+    // Tambah mini card (form)
+    function createAddCard() {
+        const card = document.createElement('div');
+        card.className = 'bg-white p-4 rounded-xl shadow-md flex flex-col gap-4';
+        card.innerHTML = `
+            <input type="text" id="mini-title" placeholder="Title" class="border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"/>
+            <textarea id="mini-content" rows="3" placeholder="Content" class="border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+            <input type="text" id="mini-url" placeholder="URL" class="border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"/>
+            <div class="flex justify-end gap-2">
+                <button id="mini-save" class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">Simpan</button>
+                <button id="mini-cancel" class="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500">Batal</button>
+            </div>
+        `;
+        return card;
+    }
+
+    // Show/hide mini add card
+    showAddCardBtn.addEventListener('click', () => {
+        if(addCardVisible) return;
+        const addCard = createAddCard();
+        newsList.prepend(addCard);
+        addCardVisible = true;
+
+        // Cancel
+        addCard.querySelector('#mini-cancel').addEventListener('click', () => {
+            addCard.remove();
+            addCardVisible = false;
+        });
+
+        // Save
+        addCard.querySelector('#mini-save').addEventListener('click', async () => {
+            const title = addCard.querySelector('#mini-title').value;
+            const content = addCard.querySelector('#mini-content').value;
+            const url = addCard.querySelector('#mini-url').value;
+
+            try {
+                const res = await fetch(`{{ route('store') }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({title, content, url})
+                });
+                const data = await res.json();
+                if(data.success){
+                    const card = createCard(data.data, true);
+                    newsList.replaceChild(card, addCard); // ganti card mini jadi full card
+                    addCardVisible = false;
+                    showFlash('Berita berhasil disimpan!');
+                } else {
+                    alert('Gagal menyimpan berita');
+                }
+            } catch(err){
+                console.error(err);
+                alert('Terjadi kesalahan saat menyimpan berita');
+            }
         });
     });
 
-    // Delete button
-    card.querySelector('.delete-btn').addEventListener('click', async () => {
-        if(!confirm('Yakin ingin menghapus berita ini?')) return;
-        try {
-            const resDelete = await fetch(`/news/${news.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                    'Accept': 'application/json'
-                }
-            });
-            const dataDelete = await resDelete.json();
-            if(dataDelete.success){
-                card.classList.add('opacity-0','scale-95');
-                setTimeout(() => card.remove(),300);
-                showFlash('Berita berhasil dihapus!');
-            } else {
-                alert('Gagal menghapus berita');
-            }
-        } catch(err) {
-            console.error(err);
-            alert('Terjadi kesalahan saat hapus');
-        }
+    // Close modal
+    closeModalBtn.addEventListener('click', () => {
+        modalContent.classList.add('scale-95');
+        modal.classList.add('opacity-0');
+        setTimeout(()=> modal.classList.add('hidden'), 300);
+    });
+    modal.addEventListener('click', (e) => {
+        if(e.target === modal) closeModalBtn.click();
     });
 
-    return card;
-}
-
-// Tambah mini card (form)
-function createAddCard() {
-    const card = document.createElement('div');
-    card.className = 'bg-white p-4 rounded-xl shadow-md flex flex-col gap-4';
-    card.innerHTML = `
-        <input type="text" id="mini-title" placeholder="Title" class="border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"/>
-        <textarea id="mini-content" rows="3" placeholder="Content" class="border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
-        <input type="text" id="mini-url" placeholder="URL" class="border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"/>
-        <div class="flex justify-end gap-2">
-            <button id="mini-save" class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">Simpan</button>
-            <button id="mini-cancel" class="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500">Batal</button>
-        </div>
-    `;
-    return card;
-}
-
-// Show/hide mini add card
-showAddCardBtn.addEventListener('click', () => {
-    if(addCardVisible) return;
-    const addCard = createAddCard();
-    newsList.prepend(addCard);
-    addCardVisible = true;
-
-    // Cancel
-    addCard.querySelector('#mini-cancel').addEventListener('click', () => {
-        addCard.remove();
-        addCardVisible = false;
-    });
-
-    // Save
-    addCard.querySelector('#mini-save').addEventListener('click', async () => {
-        const title = addCard.querySelector('#mini-title').value;
-        const content = addCard.querySelector('#mini-content').value;
-        const url = addCard.querySelector('#mini-url').value;
+    // Submit edit modal
+    editForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = editId.value;
+        const updatedData = {
+            title: editTitle.value,
+            content: editContent.value,
+            url: editUrl.value
+        };
 
         try {
-            const res = await fetch(`{{ route('store') }}`, {
-                method: 'POST',
+            const resUpdate = await fetch(`/news/${id}`, {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify({title, content, url})
+                body: JSON.stringify(updatedData)
             });
-            const data = await res.json();
-            if(data.success){
-                const card = createCard(data.data, true);
-                newsList.replaceChild(card, addCard); // ganti card mini jadi full card
-                addCardVisible = false;
-                showFlash('Berita berhasil disimpan!');
+            const dataUpdate = await resUpdate.json();
+            if(dataUpdate.success){
+                const card = document.querySelector(`.bg-white[data-id='${id}']`);
+                card.querySelector('h4').textContent = updatedData.title;
+                card.querySelector('p').textContent = updatedData.content.substring(0,100);
+
+                // update bagian media (thumbnail/link)
+                let mediaHtml = '';
+                const ytMatch = updatedData.url ? updatedData.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/) : null;
+                if (ytMatch) {
+                    const videoId = ytMatch[1];
+                    mediaHtml = `
+                        <div class="mb-4 relative group">
+                            <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" class="block relative">
+                                <img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" 
+                                    alt="YouTube Thumbnail" 
+                                    class="w-full rounded-lg shadow-md group-hover:opacity-80 transition"/>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <svg class="w-16 h-16 text-white bg-red-600 rounded-full p-3 opacity-80 group-hover:scale-110 transition" 
+                                        fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M10 8.64v6.72L15.27 12 10 8.64z"/>
+                                    </svg>
+                                </div>
+                            </a>
+                        </div>
+                    `;
+                } else if (updatedData.url) {
+                    mediaHtml = `<a href="${updatedData.url}" target="_blank" class="text-blue-600 underline mb-4 block">${updatedData.url}</a>`;
+                }
+                card.querySelectorAll('a,div.mb-4').forEach(el => el.remove()); 
+                card.querySelector('p').insertAdjacentHTML('afterend', mediaHtml);
+
+                showFlash('Berita berhasil diperbarui!');
+                closeModalBtn.click();
             } else {
-                alert('Gagal menyimpan berita');
+                alert('Gagal memperbarui berita');
             }
         } catch(err){
             console.error(err);
-            alert('Terjadi kesalahan saat menyimpan berita');
+            alert('Terjadi kesalahan saat update');
         }
     });
-});
-
-// Close modal
-closeModalBtn.addEventListener('click', () => {
-    modalContent.classList.add('scale-95');
-    modal.classList.add('opacity-0');
-    setTimeout(()=> modal.classList.add('hidden'), 300);
-});
-modal.addEventListener('click', (e) => {
-    if(e.target === modal) closeModalBtn.click();
-});
-
-// Submit edit modal
-editForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = editId.value;
-    const updatedData = {
-        title: editTitle.value,
-        content: editContent.value,
-        url: editUrl.value
-    };
-
-    try {
-        const resUpdate = await fetch(`/news/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(updatedData)
-        });
-        const dataUpdate = await resUpdate.json();
-        if(dataUpdate.success){
-            const card = document.querySelector(`.bg-white[data-id='${id}']`);
-            card.querySelector('h4').textContent = updatedData.title;
-            card.querySelector('p').textContent = updatedData.content.substring(0,100);
-            card.querySelector('a').href = updatedData.url;
-            card.querySelector('a').textContent = updatedData.url;
-
-            showFlash('Berita berhasil diperbarui!');
-            closeModalBtn.click();
-        } else {
-            alert('Gagal memperbarui berita');
-        }
-    } catch(err){
-        console.error(err);
-        alert('Terjadi kesalahan saat update');
-    }
-});
 </script>
 </x-app-layout>
