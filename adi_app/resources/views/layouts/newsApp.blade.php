@@ -20,7 +20,9 @@
             @include('layouts.headerNews')
         
             {{-- Top Menu --}}
-            @include('layouts.top-menuNews')
+            @if (request()->routeIs('index'))
+                @include('layouts.top-menuNews')
+            @endif
         
             {{-- Main Content --}}
             <main class="flex-grow p-4 space-y-4">
@@ -31,9 +33,7 @@
             @include('layouts.bottom-navNews')
 
             <footer class="bg-white shadow mt-6">
-                <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500">
-                    <span>© {{ date('Y') }} Mycdc. All rights reserved.</span>
-                </div>
+                
             </footer>
         </div>
     </body>

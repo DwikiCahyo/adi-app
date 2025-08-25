@@ -31,6 +31,14 @@ Route::prefix('news')->group(function() {
 //     return view('dashboard');
 // })->middleware(['auth', 'verified'])->name('dashboard');
 
+Route::get('/location', function () {
+    return view('location/location');
+})->name('location');
+
+Route::get('/giving', function () {
+    return view('giving/giving');
+})->name('giving');
+
 Route::get('/resource', function () {
     return view('resource');
 })->middleware(['auth', 'verified'])->name('resource');
