@@ -43,9 +43,9 @@ class News extends Model
         });
 
         static::updating(function (News $news) {
-            if ($news->isDirty('title')) {
-                $news->slug = Str::slug($news->title);
-            }
+            // if ($news->isDirty('title')) {
+            //     $news->slug = Str::slug($news->title);
+            // }
 
             if(auth() -> check()){
                 $news -> updated_by = auth() -> id();

@@ -22,15 +22,24 @@ Route::prefix('auth')->group(function () {
     Route::post('login', [ApiAuthenticationController::class, 'login']);
 });
 
-Route::get('news' , [NewsController::class,'index']);
-Route::get('news/{news:slug}', [NewsController::class, 'show']);
-Route::post('news', [NewsController::class, 'store']);
-
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::middleware('auth:sanctum')->post('news', [NewsController::class, 'store']);
+
+Route::prefix('news')->group( function() {
+    
+    Route::controller(NewsController::class)->group(function () {
+        Route::get('/', 'index');
+        Route::get('/{news:slug}', 'show');
+
+        //auth
+        Route::middleware(['auth:sanctum'])->group(function () {
+            Route::post('/', 'store');
+            Route::put('/{news:slug}', 'update');
+        });
+    });
+});
 
 
 

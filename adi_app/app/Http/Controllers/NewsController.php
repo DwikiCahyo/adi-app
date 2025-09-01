@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreNewsRequest;
+use App\Http\Requests\UpdateNewsRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Contracts\View\View;
@@ -153,6 +154,33 @@ class NewsController extends Controller {
                 'data' => new NewsResource($news->load(['creator', 'updater'])),
                 'message' => 'News berhasil dibuat'
         ], Response::HTTP_CREATED);
+    }
+
+    public function update(UpdateNewsRequest $request , News $news ){
+
+         $news->load(['creator', 'updater']);
+
+        $validatedData = $request -> validated();
+        $validatedData['updated_by'] = auth()->id();
+
+        $oldTitle = $news->title;
+        $news->update($validatedData);
+
+         Log::info("News updated", [
+            'news_id' => $news->id,
+            'old_title' => $oldTitle,
+            'new_title' => $news->title,
+            'validate_data' => $validatedData,
+            'updated_by' => auth()->id()
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => new NewsResource($news),
+                'message' => 'News berhasil diupdate'
+            ]);
+        }
     }
 
 }
