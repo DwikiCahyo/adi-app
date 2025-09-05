@@ -60,24 +60,19 @@ class NewsController extends Controller {
     }
 
 
-    public function NewsAdmin(Request $request){
-        
+    public function NewsAdmin(){
         $news = News::with(['creator', 'updater'])
-                    ->active()
-                    ->recent()
-                    ->get();
+            ->active()
+            ->get();
 
-        if ($request->expectsJson()) {
-
-            $formattedNews = NewsResource::collection($news);
-
-            return response()->json([
-                'success' => true,
-                'data'    => $formattedNews,
-                'total'   => $news->count(),
-                'message' => 'Data News berhasil ditampilkan'
-            ]);
-        }
+        // tambahin embed & thumbnail
+        $news->transform(function ($item) {
+            $item->embed_url = $item->url ? $this->convertVideoToEmbed($item->url) : null;
+            $item->thumbnail_url = $item->url
+                ? $this->getVideoThumbnail($item->url)
+                : asset('images/default-thumbnail.jpg');
+            return $item;
+        });
 
         return view('dashboard', compact('news'));
     }
@@ -112,8 +107,7 @@ class NewsController extends Controller {
     /**
      * Convert video link to embeddable link.
      */
-    private function convertVideoToEmbed($url)
-    {
+    private function convertVideoToEmbed($url){
         if (preg_match('/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^\&\?]+)/', $url, $matches)) {
             return 'https://www.youtube.com/embed/' . $matches[1];
         }
@@ -126,61 +120,46 @@ class NewsController extends Controller {
     }
 
 
-    public function store(StoreNewsRequest $request):JsonResponse
-    {
+    public function store(StoreNewsRequest $request){
         $validatedData = $request->validated();
         $validatedData['created_by'] = auth()->id();
         $validatedData['updated_by'] = auth()->id();
 
         $news = News::create($validatedData);
 
-
-         Log::info("News created", [
+        Log::info("News created", [
             'news_id' => $news->id,
             'title' => $news->title,
             'created_by' => auth()->id()
         ]);
 
-        // if ($request->expectsJson()) {
-        //     return response()->json([
-        //         'success' => true,
-        //         'data' => new NewsResource($news->load(['creator', 'updater'])),
-        //         'message' => 'News berhasil dibuat'
-        //     ], 201);
-        // }
-
-        return response()->json([
-                'success' => true,
-                'data' => new NewsResource($news->load(['creator', 'updater'])),
-                'message' => 'News berhasil dibuat'
-        ], Response::HTTP_CREATED);
+        return redirect()->route('dashboard')->with('success', 'News berhasil dibuat');
     }
 
-    public function update(UpdateNewsRequest $request , News $news ){
 
-         $news->load(['creator', 'updater']);
+    public function update(UpdateNewsRequest $request, $id){
+        $news = News::findOrFail($id);
 
-        $validatedData = $request -> validated();
+        $validatedData = $request->validated();
         $validatedData['updated_by'] = auth()->id();
 
         $oldTitle = $news->title;
         $news->update($validatedData);
 
-         Log::info("News updated", [
-            'news_id' => $news->id,
-            'old_title' => $oldTitle,
-            'new_title' => $news->title,
-            'validate_data' => $validatedData,
+        Log::info("News updated", [
+            'news_id'    => $news->id,
+            'old_title'  => $oldTitle,
+            'new_title'  => $news->title,
             'updated_by' => auth()->id()
         ]);
 
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'data' => new NewsResource($news),
-                'message' => 'News berhasil diupdate'
-            ]);
-        }
+        return back()->with('success', 'News berhasil diedit!');
+    }
+
+    public function destroy($id){
+        $news = News::findOrFail($id);
+        $news->delete();
+        return back()->with('success', 'News berhasil didelete!');
     }
 
 }

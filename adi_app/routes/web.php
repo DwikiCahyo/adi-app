@@ -16,16 +16,16 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
+Route::get('/login', function () {
     return view('auth/login');
 });
 
 
-Route::prefix('news')->group(function() {
-    Route::get('/', [NewsController::class, 'index'])->name('index');
-    Route::get('/{news}', [NewsController::class, 'show'])->name('show');
-    Route::post('/news/store', [NewsController::class, 'store'])->name('store');
-});
+// Route::prefix('news')->group(function() {
+//     // Route::get('/', [NewsController::class, 'index'])->name('index');
+//     // Route::get('/{news}', [NewsController::class, 'show'])->name('show');
+    
+// });
 
 // Route::get('/dashboard', function () {
 //     return view('dashboard');
@@ -55,8 +55,8 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [NewsController::class, 'NewsAdmin'])->name('dashboard');
-
-
+    Route::post('/news/store', [NewsController::class, 'store'])->name('store');
+    Route::resource('/news', NewsController::class);
 });
 
 require __DIR__.'/auth.php';
