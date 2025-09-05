@@ -1,303 +1,204 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between sm:-my-px sm:ms-10 sm:flex">
-            <div class="flex space-x-8">
-                <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                    {{ __('News Feed') }}
+    <x-slot name="header"> 
+        <div class="flex items-center justify-between sm:-my-px sm:ms-10 sm:flex"> 
+            <div class="flex space-x-8"> 
+                <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')"> 
+                    {{ __('News Feed') }} 
                 </x-nav-link>
-            </div>
-        </div>
+            </div> 
+        </div> 
     </x-slot>
 
-    <div class="py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-            <div id="flash-message" class="hidden mb-4 p-4 bg-green-100 text-green-700 rounded-lg shadow transition-opacity duration-500"></div>
-
-            <div class="mb-6 flex justify-end">
-                <button id="show-add-card" class="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700">Tambah News Feed</button>
+    <div class="container mx-auto p-6">
+        {{-- Flash Message --}}
+        @if(session('success'))
+            <div id="flash-message" class="mb-4 p-4 text-green-800 bg-green-200 rounded-lg transition-opacity duration-500">
+                {{ session('success') }}
             </div>
+        @endif
 
-            <div id="news-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            </div>
+        {{-- Header --}}
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold">Daftar News</h1>
+            <button 
+                onclick="openModal('createModal')"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow"
+            >
+                + Tambah News
+            </button>
+        </div>
+
+        {{-- Tabel DataTables --}}
+        <div class="bg-white rounded-lg shadow p-4 overflow-x-auto">
+            <table id="newsTable" class="min-w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                    <tr>
+                        <th class="px-4 py-3">ID</th>
+                        <th class="px-4 py-3">Title</th>
+                        <th class="px-4 py-3">Content</th>
+                        <th class="px-4 py-3">URL</th>
+                        <th class="px-4 py-3">Created At</th>
+                        <th class="px-4 py-3">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($news as $item)
+                        <tr>
+                            <td class="px-4 py-3">{{ $item->id }}</td>
+                            <td class="px-4 py-3 font-medium whitespace-normal break-words max-w-xs">
+                                {{ $item->title }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-normal break-words max-w-md">
+                                {{ Str::limit($item->content, 200) }}
+                            </td>
+                            <td class="px-4 py-3">
+                                @if($item->thumbnail_url && filter_var($item->thumbnail_url, FILTER_VALIDATE_URL))
+                                    <img 
+                                        src="{{ $item->thumbnail_url }}" 
+                                        alt="{{ $item->title }}" 
+                                        class="w-20 h-14 object-cover rounded"
+                                        onerror="this.onerror=null;this.src='no-image.png';"
+                                    >
+                                @else
+                                    Gambar tidak tersedia
+                                @endif
+                            </td>
+                            <td class="px-4 py-3">{{ $item->created_at->format('d M Y') }}</td>
+                            <td class="px-4 py-3 space-x-2">
+                                <button onclick="openModal('editModal-{{ $item->id }}')" 
+                                    class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg">
+                                    Edit
+                                </button>
+                                <form action="{{ route('news.destroy', $item->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Yakin mau hapus?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg">
+                                        Hapus
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+
+                        {{-- Modal Edit --}}
+                        <div id="editModal-{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+                            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+                                <h2 class="text-xl font-bold mb-4">Edit News</h2>
+                                <form action="{{ route('news.update', $item->id) }}" method="POST">
+                                    @csrf
+                                    @method('PUT')
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium">Title</label>
+                                        <input type="text" name="title" class="w-full border rounded p-2" value="{{ $item->title }}">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium">Content</label>
+                                        <textarea name="content" class="w-full border rounded p-2" rows="4">{{ $item->content }}</textarea>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium">URL</label>
+                                        <input type="text" name="url" class="w-full border rounded p-2" value="{{ $item->url }}">
+                                    </div>
+                                    <div class="flex justify-end space-x-2">
+                                        <button type="button" onclick="closeModal('editModal-{{ $item->id }}')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
+                                        <button type="submit" class="px-4 py-2 bg-yellow-600 text-white rounded-lg">Update</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
     </div>
 
-    {{-- Modal Edit --}}
-    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 transition-opacity duration-300 opacity-0">
-        <div class="bg-white backdrop-blur-md p-6 rounded-xl shadow-2xl w-full max-w-lg transform scale-95 transition-all duration-300">
-            <h3 class="text-xl font-bold mb-4 text-gray-800">Edit News Feed</h3>
-            <form id="edit-news-form">
+    {{-- Modal Create --}}
+    <div id="createModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+            <h2 class="text-xl font-bold mb-4">Tambah News</h2>
+            <form action="{{ route('store') }}" method="POST">
                 @csrf
-                @method('PUT')
-                <input type="hidden" id="edit-id">
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Title</label>
-                        <input type="text" id="edit-title" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"/>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Content</label>
-                        <textarea id="edit-content" rows="4" class="mt-1 block w-full p-3 text-gray-900 text-sm bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">URL</label>
-                        <input type="text" id="edit-url" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"/>
-                    </div>
-                    <div class="flex justify-end gap-2 mt-4">
-                        <button type="button" id="close-modal" class="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500">Batal</button>
-                        <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Simpan</button>
-                    </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium">Title</label>
+                    <input type="text" name="title" value="{{ old('title') }}" class="w-full border rounded p-2">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium">Content</label>
+                    <textarea name="content" class="w-full border rounded p-2" rows="4">{{ old('content') }}</textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium">URL</label>
+                    <input type="text" name="url" value="{{ old('url') }}" class="w-full border rounded p-2">
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeModal('createModal')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Simpan</button>
                 </div>
             </form>
         </div>
     </div>
 
-<script>
-    const newsList = document.getElementById('news-list');
-    const flashMessage = document.getElementById('flash-message');
+    {{-- DataTable CSS & JS --}}
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.css" />
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 
-    const modal = document.getElementById('edit-modal');
-    const modalContent = modal.querySelector('div');
-    const editForm = document.getElementById('edit-news-form');
-    const editId = document.getElementById('edit-id');
-    const editTitle = document.getElementById('edit-title');
-    const editContent = document.getElementById('edit-content');
-    const editUrl = document.getElementById('edit-url');
-    const closeModalBtn = document.getElementById('close-modal');
-
-    const showAddCardBtn = document.getElementById('show-add-card');
-    let addCardVisible = false;
-
-    // Fungsi flash message
-    function showFlash(message) {
-        flashMessage.textContent = message;
-        flashMessage.classList.remove('hidden');
-        flashMessage.classList.add('opacity-100');
-        setTimeout(() => {
-            flashMessage.classList.add('hidden');
-            flashMessage.classList.remove('opacity-100');
-        }, 3000);
-    }
-
-    // Load initial news dari backend
-    const initialNews = @json($news ?? []);
-    initialNews.forEach(n => newsList.appendChild(createCard(n, true)));
-
-    // Fungsi buat card berita
-    function createCard(news, animate=false) {
-        const card = document.createElement('div');
-        card.className = 'bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition transform hover:-translate-y-1 opacity-0 scale-95';
-        card.dataset.id = news.id;
-
-        // Cek apakah URL YouTube
-        let mediaHtml = '';
-        const ytMatch = news.url ? news.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/) : null;
-        if (ytMatch) {
-            const videoId = ytMatch[1];
-            mediaHtml = `
-                <div class="mb-4 relative group">
-                    <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" class="block relative">
-                        <img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" 
-                            alt="YouTube Thumbnail" 
-                            class="w-full rounded-lg shadow-md group-hover:opacity-80 transition"/>
-                    </a>
-                </div>
-            `;
-        } else if (news.url) {
-            mediaHtml = `<a href="${news.url}" target="_blank" class="text-blue-600 underline mb-4 block">${news.url}</a>`;
-        }
-
-        card.innerHTML = `
-            <h4 class="text-lg font-semibold mb-2">${news.title}</h4>
-            
-            ${mediaHtml}
-            <div class="flex justify-end gap-2">
-                <button class="edit-btn px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">Edit</button>
-                <button class="delete-btn px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Hapus</button>
-            </div>
-        `;
-        if(animate){
-            requestAnimationFrame(() => {
-                card.classList.remove('opacity-0','scale-95');
-                card.classList.add('opacity-100','scale-100');
-            });
-        }
-
-        // Edit button -> buka modal
-        card.querySelector('.edit-btn').addEventListener('click', () => {
-            editId.value = news.id;
-            editTitle.value = news.title;
-            editContent.value = news.content;
-            editUrl.value = news.url;
-            modal.classList.remove('hidden');
-            requestAnimationFrame(() => {
-                modal.classList.remove('opacity-0');
-                modalContent.classList.remove('scale-95');
-                modalContent.classList.add('scale-100');
-            });
-        });
-
-        // Delete button
-        card.querySelector('.delete-btn').addEventListener('click', async () => {
-            if(!confirm('Yakin ingin menghapus berita ini?')) return;
-            try {
-                const resDelete = await fetch(`/news/${news.id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                        'Accept': 'application/json'
+    <script>
+        $(document).ready(function () {
+            $('#newsTable').DataTable({
+                responsive: {
+                    breakpoints: [
+                        { name: 'desktop', width: Infinity },
+                        { name: 'tablet',  width: 1024 },
+                        { name: 'mobile',  width: 640 }
+                    ],
+                    details: {
+                        renderer: function ( api, rowIdx, columns ) {
+                            let data = $.map(columns, function (col) {
+                                return col.hidden
+                                    ? `<div class="flex flex-col sm:flex-row sm:items-start sm:gap-2 py-2 border-b">
+                                            <span class="font-bold text-gray-800 min-w-[100px]">${col.title} :</span>
+                                            <span class="text-gray-600 break-words">${col.data}</span>
+                                       </div>`
+                                    : '';
+                            }).join('');
+                            return data ? $('<div class="p-3"/>').append(data) : false;
+                        }
                     }
-                });
-                const dataDelete = await resDelete.json();
-                if(dataDelete.success){
-                    card.classList.add('opacity-0','scale-95');
-                    setTimeout(() => card.remove(),300);
-                    showFlash('Berita berhasil dihapus!');
-                } else {
-                    alert('Gagal menghapus berita');
-                }
-            } catch(err) {
-                console.error(err);
-                alert('Terjadi kesalahan saat hapus');
-            }
-        });
-
-        return card;
-    }
-
-    // Tambah mini card (form)
-    function createAddCard() {
-        const card = document.createElement('div');
-        card.className = 'bg-white p-4 rounded-xl shadow-md flex flex-col gap-4';
-        card.innerHTML = `
-            <input type="text" id="mini-title" placeholder="Title" class="border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"/>
-            <textarea id="mini-content" rows="3" placeholder="Content" class="border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
-            <input type="text" id="mini-url" placeholder="URL" class="border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"/>
-            <div class="flex justify-end gap-2">
-                <button id="mini-save" class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">Simpan</button>
-                <button id="mini-cancel" class="px-3 py-1 bg-gray-400 text-white rounded hover:bg-gray-500">Batal</button>
-            </div>
-        `;
-        return card;
-    }
-
-    // Show/hide mini add card
-    showAddCardBtn.addEventListener('click', () => {
-        if(addCardVisible) return;
-        const addCard = createAddCard();
-        newsList.prepend(addCard);
-        addCardVisible = true;
-
-        // Cancel
-        addCard.querySelector('#mini-cancel').addEventListener('click', () => {
-            addCard.remove();
-            addCardVisible = false;
-        });
-
-        // Save
-        addCard.querySelector('#mini-save').addEventListener('click', async () => {
-            const title = addCard.querySelector('#mini-title').value;
-            const content = addCard.querySelector('#mini-content').value;
-            const url = addCard.querySelector('#mini-url').value;
-
-            try {
-                const res = await fetch(`{{ route('store') }}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({title, content, url})
-                });
-                const data = await res.json();
-                if(data.success){
-                    const card = createCard(data.data, true);
-                    newsList.replaceChild(card, addCard); // ganti card mini jadi full card
-                    addCardVisible = false;
-                    showFlash('Berita berhasil disimpan!');
-                } else {
-                    alert('Gagal menyimpan berita');
-                }
-            } catch(err){
-                console.error(err);
-                alert('Terjadi kesalahan saat menyimpan berita');
-            }
-        });
-    });
-
-    // Close modal
-    closeModalBtn.addEventListener('click', () => {
-        modalContent.classList.add('scale-95');
-        modal.classList.add('opacity-0');
-        setTimeout(()=> modal.classList.add('hidden'), 300);
-    });
-    modal.addEventListener('click', (e) => {
-        if(e.target === modal) closeModalBtn.click();
-    });
-
-    // Submit edit modal
-    editForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = editId.value;
-        const updatedData = {
-            title: editTitle.value,
-            content: editContent.value,
-            url: editUrl.value
-        };
-
-        try {
-            const resUpdate = await fetch(`/news/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                    'Accept': 'application/json'
                 },
-                body: JSON.stringify(updatedData)
-            });
-            const dataUpdate = await resUpdate.json();
-            if(dataUpdate.success){
-                const card = document.querySelector(`.bg-white[data-id='${id}']`);
-                card.querySelector('h4').textContent = updatedData.title;
-                card.querySelector('p').textContent = updatedData.content.substring(0,100);
-
-                // update bagian media (thumbnail/link)
-                let mediaHtml = '';
-                const ytMatch = updatedData.url ? updatedData.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/) : null;
-                if (ytMatch) {
-                    const videoId = ytMatch[1];
-                    mediaHtml = `
-                        <div class="mb-4 relative group">
-                            <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" class="block relative">
-                                <img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" 
-                                    alt="YouTube Thumbnail" 
-                                    class="w-full rounded-lg shadow-md group-hover:opacity-80 transition"/>
-                                <div class="absolute inset-0 flex items-center justify-center">
-                                    <svg class="w-16 h-16 text-white bg-red-600 rounded-full p-3 opacity-80 group-hover:scale-110 transition" 
-                                        fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M10 8.64v6.72L15.27 12 10 8.64z"/>
-                                    </svg>
-                                </div>
-                            </a>
-                        </div>
-                    `;
-                } else if (updatedData.url) {
-                    mediaHtml = `<a href="${updatedData.url}" target="_blank" class="text-blue-600 underline mb-4 block">${updatedData.url}</a>`;
+                pageLength: 10,
+                lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Semua"] ],
+                language: {
+                    search: "Cari:",
+                    lengthMenu: "Tampilkan _MENU_ data per halaman",
+                    zeroRecords: "Tidak ada data",
+                    info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                    infoEmpty: "Tidak ada data tersedia",
+                    infoFiltered: "(difilter dari total _MAX_ data)",
+                    emptyTable: "Belum ada data news."
                 }
-                card.querySelectorAll('a,div.mb-4').forEach(el => el.remove()); 
-                card.querySelector('p').insertAdjacentHTML('afterend', mediaHtml);
+            });
 
-                showFlash('Berita berhasil diperbarui!');
-                closeModalBtn.click();
-            } else {
-                alert('Gagal memperbarui berita');
-            }
-        } catch(err){
-            console.error(err);
-            alert('Terjadi kesalahan saat update');
+            @if($errors->any())
+                openModal('createModal');
+            @endif
+        });
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
         }
-    });
-</script>
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        setTimeout(() => {
+            let flash = document.getElementById('flash-message');
+            if (flash) {
+                flash.style.opacity = '0'; 
+                setTimeout(() => flash.remove(), 500); 
+            }
+        }, 3000);
+    </script>
 </x-app-layout>
+
