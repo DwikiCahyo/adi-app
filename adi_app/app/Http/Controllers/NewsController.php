@@ -59,24 +59,6 @@ class NewsController extends Controller {
         return asset('images/default-thumbnail.jpg');
     }
 
-
-    public function NewsAdmin(){
-        $news = News::with(['creator', 'updater'])
-            ->active()
-            ->get();
-
-        // tambahin embed & thumbnail
-        $news->transform(function ($item) {
-            $item->embed_url = $item->url ? $this->convertVideoToEmbed($item->url) : null;
-            $item->thumbnail_url = $item->url
-                ? $this->getVideoThumbnail($item->url)
-                : asset('images/default-thumbnail.jpg');
-            return $item;
-        });
-
-        return view('dashboard', compact('news'));
-    }
-
     public function show(Request $request, News $news){
         $news->load(['creator', 'updater']);
 
@@ -119,24 +101,42 @@ class NewsController extends Controller {
         return $url; 
     }
 
+    //ADMIN
+
+    public function NewsAdmin(){
+        $news = News::with(['creator', 'updater'])
+            ->active()
+            ->get();
+
+        // tambahin embed & thumbnail
+        $news->transform(function ($item) {
+            $item->embed_url = $item->url ? $this->convertVideoToEmbed($item->url) : null;
+            $item->thumbnail_url = $item->url
+                ? $this->getVideoThumbnail($item->url)
+                : asset('images/default-thumbnail.jpg');
+            return $item;
+        });
+
+        return view('admin.dashboard', compact('news'));
+    }
 
     public function store(StoreNewsRequest $request){
         $validatedData = $request->validated();
         $validatedData['created_by'] = auth()->id();
         $validatedData['updated_by'] = auth()->id();
-
+    
         $news = News::create($validatedData);
-
+    
         Log::info("News created", [
             'news_id' => $news->id,
             'title' => $news->title,
             'created_by' => auth()->id()
         ]);
-
-        return redirect()->route('dashboard')->with('success', 'News berhasil dibuat');
+    
+        // Redirect ke dashboard yang otomatis ambil semua news
+        return redirect()->route('admin.dashboard')->with('success', 'News berhasil dibuat!');
     }
-
-
+    
     public function update(UpdateNewsRequest $request, $id){
         $news = News::findOrFail($id);
 

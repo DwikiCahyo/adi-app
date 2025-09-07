@@ -20,7 +20,7 @@
             @include('layouts.headerNews')
         
             {{-- Top Menu --}}
-            @if (request()->routeIs('index'))
+            @if (request()->routeIs('news.index') || request()->routeIs('events.index'))
                 @include('layouts.top-menuNews')
             @endif
         

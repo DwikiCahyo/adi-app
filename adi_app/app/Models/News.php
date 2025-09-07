@@ -20,7 +20,7 @@ class News extends Model
         'title',
         'content',
         'url',
-        'slug'
+        'slug',
     ];
 
     protected $cast = [

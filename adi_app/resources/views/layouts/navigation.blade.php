@@ -3,11 +3,11 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex items-center space-x-8">
-                <a href="{{ route('dashboard') }}" class="flex items-center space-x-2">
+                <a href="{{ route('admin.dashboard') }}" class="flex items-center space-x-2">
                     <img src="{{ asset('Images/logo.png') }}" alt="Logo" class="h-10 w-auto">
                 </a>
                 <div class="hidden sm:flex space-x-8">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" 
+                    <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')" 
                         class="flex items-center space-x-2 font-medium text-white relative group px-2 py-1">
                         <span>Home</span>
                     </x-nav-link>
@@ -65,7 +65,7 @@
     <div x-show="open" class="sm:hidden bg-blue-400">
         <div class="px-4 pt-2 pb-3 space-y-1">
             <!-- Home -->
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+            <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
                 <div class="flex items-center space-x-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" 
                         viewBox="0 0 24 24" stroke="currentColor">
