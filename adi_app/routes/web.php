@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\NewsController;
+use App\Http\Controllers\EventsController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -19,17 +20,6 @@ use Illuminate\Support\Facades\Route;
 Route::get('/login', function () {
     return view('auth/login');
 });
-
-
-// Route::prefix('news')->group(function() {
-//     // Route::get('/', [NewsController::class, 'index'])->name('index');
-//     // Route::get('/{news}', [NewsController::class, 'show'])->name('show');
-    
-// });
-
-// Route::get('/dashboard', function () {
-//     return view('dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::get('/location', function () {
     return view('location/location');
@@ -53,10 +43,35 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', [NewsController::class, 'NewsAdmin'])->name('dashboard');
-    Route::post('/news/store', [NewsController::class, 'store'])->name('store');
-    Route::resource('/news', NewsController::class);
+//User
+Route::prefix('news')->group(function() {
+    Route::get('/', [NewsController::class, 'index'])->name('news.index');
+    Route::get('/{news}', [NewsController::class, 'show'])->name('news.show');
 });
 
+//Event
+Route::prefix('event')->group(function() {
+    Route::get('/events', [EventsController::class, 'indexUser'])->name('events.index');
+    Route::get('/events/{event}', [EventsController::class, 'showUser'])->name('events.showUser');
+});
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Halaman Admin Dashboard
+    Route::get('/dashboard', [NewsController::class, 'NewsAdmin'])->name('admin.dashboard');
+    
+    // CRUD News Admin
+    Route::post('/dashboard', [NewsController::class, 'store'])->name('admin.dashboard.store');
+    Route::put('/dashboard/{news}', [NewsController::class, 'update'])->name('admin.dashboard.update');
+    Route::delete('/dashboard/{news}', [NewsController::class, 'destroy'])->name('admin.dashboard.destroy');
+    
+    //Halaman Admin Event
+    Route::get('/eventsAdmin', [EventsController::class, 'index'])->name('admin.event.index');
+    // Events
+    Route::post('/eventsAdmin', [EventsController::class, 'store'])->name('admin.event.store');
+    Route::put('/eventsAdmin/{news}', [EventsController::class, 'update'])->name('admin.event.update');
+    Route::delete('/eventsAdmin/{news}', [EventsController::class, 'destroy'])->name('admin.event.destroy');
+
+    // Route::resource('/eventsAdmin', EventsController::class);
+});
+    
 require __DIR__.'/auth.php';
