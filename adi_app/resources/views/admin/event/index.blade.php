@@ -26,7 +26,7 @@
         @endif
 
         {{-- Error Global --}}
-        @if ($errors->any())
+        {{-- @if ($errors->any())
             <div class="mb-4 p-4 text-red-800 bg-red-200 rounded-lg">
                 <ul class="list-disc ps-5">
                     @foreach ($errors->all() as $error)
@@ -34,7 +34,7 @@
                     @endforeach
                 </ul>
             </div>
-        @endif
+        @endif --}}
 
         {{-- Header --}}
         <div class="flex justify-between items-center mb-6">
@@ -129,6 +129,11 @@
                         {{-- Modal Edit --}}
                         <div id="editModal-{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
                             <div class="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-screen overflow-y-auto p-6">
+                                 @if ($errors->has('general'))
+                                    <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
+                                            {{ $errors->first('general') }}
+                                    </div>
+                                @endif
                                 <h2 class="text-xl font-bold mb-4">Edit Event</h2>
                                 <form action="{{ route('admin.event.update', $item->id) }}" method="POST" enctype="multipart/form-data">
                                     @csrf
@@ -147,6 +152,7 @@
                                         <label class="block text-sm font-medium">Topics</label>
                                         @foreach($item->topics as $tIndex => $topic)
                                             <div class="border p-3 rounded topic-item space-y-2">
+                                                <input type="hidden" name="topics[{{ $tIndex }}][id]" value="{{ $topic->id }}">
                                                 <input type="text" name="topics[{{ $tIndex }}][topic]" value="{{ $topic->topic }}" class="w-full border rounded p-2" placeholder="Judul Topic" required>
                                                 <textarea name="topics[{{ $tIndex }}][content]" rows="3" class="w-full border rounded p-2" placeholder="Isi Konten" required>{{ $topic->content }}</textarea>
                                                 <div class="flex justify-end">
@@ -178,22 +184,39 @@
     {{-- Modal Create --}}
     <div id="createModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
         <div class="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-screen overflow-y-auto p-6">
+            @if ($errors->has('general'))
+                <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
+                        {{ $errors->first('general') }}
+                </div>
+            @endif
             <h2 class="text-xl font-bold mb-4">Tambah Event</h2>
             <form action="{{ route('admin.event.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Agenda</label>
-                    <input type="text" name="agenda" value="{{ old('agenda') }}" class="w-full border rounded p-2" required>
+                    <input type="text" name="agenda" value="{{ old('agenda') }}" class="w-full border rounded p-2">
+                    @error('agenda')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Title</label>
-                    <input type="text" name="title" value="{{ old('title') }}" class="w-full border rounded p-2" required>
+                    <input type="text" name="title" value="{{ old('title') }}" class="w-full border rounded p-2">
+                    @error('title')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div id="topics-container" class="mb-4 space-y-4">
                     <label class="block text-sm font-medium">Topics</label>
                     <div class="border p-3 rounded topic-item space-y-2">
-                        <input type="text" name="topics[0][topic]" class="w-full border rounded p-2" placeholder="Judul Topic" required>
-                        <textarea name="topics[0][content]" rows="3" class="w-full border rounded p-2" placeholder="Isi Konten" required></textarea>
+                        <input type="text" name="topics[0][topic]" class="w-full border rounded p-2" placeholder="Judul Topic" >
+                        @error('topics.*.topic')
+                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                         @enderror
+                        <textarea name="topics[0][content]" rows="3" class="w-full border rounded p-2" placeholder="Isi Konten" ></textarea>
+                        @error('topics.*.content')
+                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        @enderror
                         <div class="flex justify-end">
                             <button type="button" class="remove-topic bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs">Hapus</button>
                         </div>
@@ -205,6 +228,9 @@
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Upload Images</label>
                     <input type="file" name="images[]" class="w-full border rounded p-2" multiple>
+                     @error('images.*')
+                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        @enderror
                 </div>
                 <div class="flex justify-end space-x-2">
                     <button type="button" onclick="closeModal('createModal')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
@@ -264,8 +290,8 @@
             let div = document.createElement('div');
             div.classList.add('border', 'p-3', 'rounded', 'topic-item', 'space-y-2');
             div.innerHTML = `
-                <input type="text" name="topics[${index}][topic]" class="w-full border rounded p-2" placeholder="Judul Topic" required>
-                <textarea name="topics[${index}][content]" rows="3" class="w-full border rounded p-2" placeholder="Isi Konten" required></textarea>
+                <input type="text" name="topics[${index}][topic]" class="w-full border rounded p-2" placeholder="Judul Topic" >
+                <textarea name="topics[${index}][content]" rows="3" class="w-full border rounded p-2" placeholder="Isi Konten" ></textarea>
                 <div class="flex justify-end">
                     <button type="button" class="remove-topic bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs">Hapus</button>
                 </div>

@@ -99,10 +99,16 @@
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Title</label>
                                         <input type="text" name="title" class="w-full border rounded p-2" value="{{ $item->title }}">
+                                        @error('title')
+                                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Content</label>
                                         <textarea name="content" class="w-full border rounded p-2" rows="4">{{ $item->content }}</textarea>
+                                        @error('content')
+                                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">URL Thumbnail</label>
@@ -111,6 +117,9 @@
                                     <div class="flex justify-end space-x-2">
                                         <button type="button" onclick="closeModal('editModal-{{ $item->id }}')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
                                         <button type="submit" class="px-4 py-2 bg-yellow-600 text-white rounded-lg">Update</button>
+                                        @error('url')
+                                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
                                     </div>
                                 </form>
                             </div>
@@ -130,18 +139,28 @@
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Title</label>
                     <input type="text" name="title" value="{{ old('title') }}" class="w-full border rounded p-2">
+                     @error('title')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                     @enderror
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Content</label>
                     <textarea name="content" class="w-full border rounded p-2" rows="4">{{ old('content') }}</textarea>
+                    @error('content')
+                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium">URL Thumbnail</label>
                     <input type="text" name="url" value="{{ old('url') }}" class="w-full border rounded p-2">
+                      @error('url')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                     @enderror
                 </div>
                 <div class="flex justify-end space-x-2">
                     <button type="button" onclick="closeModal('createModal')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
                     <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Simpan</button>
+                   
                 </div>
             </form>
         </div>

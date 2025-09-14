@@ -18,7 +18,6 @@ class NewsController extends Controller {
     public function index(Request $request): View|JsonResponse{
         $news = News::with(['creator', 'updater'])
                     ->active()
-                    ->recent()
                     ->get()
                     ->map(function ($item) {
                         $item->thumbnail_url = $this->getVideoThumbnail($item->url);
