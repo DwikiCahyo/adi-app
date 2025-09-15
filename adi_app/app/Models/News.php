@@ -23,107 +23,95 @@ class News extends Model
         'slug',
     ];
 
-    protected $cast = [
+    protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
 
-    protected static function booted():void{
-
-         static::creating(function (News $news) {
+    protected static function booted(): void
+    {
+        static::creating(function (News $news) {
             if (empty($news->slug)) {
-                $news->slug = Str::slug($news->title);
+                $news->slug = $news->title; // mutator slug akan handle slugify
             }
 
-            if(auth()->check()){
-                $news -> created_by = auth() -> id();
-                $news -> updated_by = auth() -> id();
+            if (auth()->check()) {
+                $news->created_by = auth()->id();
+                $news->updated_by = auth()->id();
             }
         });
 
         static::updating(function (News $news) {
-            // if ($news->isDirty('title')) {
-            //     $news->slug = Str::slug($news->title);
-            // }
-
-            if(auth() -> check()){
-                $news -> updated_by = auth() -> id();
+            if (auth()->check()) {
+                $news->updated_by = auth()->id();
             }
         });
 
         static::deleting(function (News $news) {
             if (auth()->check()) {
                 $news->deleted_by = auth()->id();
-                $news->save();
+                if (method_exists($news, 'saveQuietly')) {
+                    $news->saveQuietly();
+                } else {
+                    $news->save();
+                }
             }
         });
-
-        
     }
 
+    // relationships...
+    public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
+    public function updater(): BelongsTo { return $this->belongsTo(User::class, 'updated_by'); }
+    public function deleter(): BelongsTo { return $this->belongsTo(User::class, 'deleted_by'); }
 
-    public function creator(): BelongsTo {
-        return $this->belongsTo(User::class, 'created_by');
-    }
+    public function images() { return $this->hasMany(NewsImage::class, 'news_id'); }
+    public function topics() { return $this->hasMany(NewsTopic::class, 'news_id'); }
 
-    public function updater():BelongsTo {
-        return $this->belongsTo(User::class , 'updated_by');
-    }
+    // scopes
+    public function scopeActive($query) { return $query->whereNull('deleted_at'); }
+    public function scopeByCreator($query, $userId) { return $query->where('created_by', $userId); }
+    public function scopeRecent($query, $days = 30) { return $query->where('created_at', '>=', now()->subDays($days)); }
 
-    public function deleter():BelongsTo {
-        return $this->belongsTo(User::class, 'updated_by');
-    }
+    public function getRouteKeyName(): string { return 'slug'; }
 
-    public function scopeActive($query) {
-        return $query -> whereNull('deleted_at');
-    }
-    
-    public function scopeByCreator($query, $userId) {
-        return $query->where('created_by', $userId);
-    }
-
-    public function scopeRecent($query, $days = 30){
-        return $query->where('created_at', '>=', now()->subDays($days));
-    }
-
-    public function getRouteKeyName(): string {
-        return 'slug';
-    }
-
-     public function resolveRouteBinding($value, $field = null)
+    public function resolveRouteBinding($value, $field = null)
     {
-
         $key = 'news_slug_attempts:' . request()->ip();
 
-    
         if (RateLimiter::tooManyAttempts($key, 10)) {
             throw new TooManySlugAttemptsException();
         }
 
         RateLimiter::hit($key, 60);
 
-        $news = $this->where($field ?? $this->getRouteKeyName(), $value)->first();
-
-        return $news;
+        return $this->where($field ?? $this->getRouteKeyName(), $value)->first();
     }
 
-    public function setSlugAttribute($value): void {
-        $slug = Str::slug($value);
-        $originalSlug = $slug;
+    /**
+     * Mutator untuk slug — pastikan unik (cek juga soft-deleted)
+     */
+    public function setSlugAttribute($value): void
+    {
+        $original = Str::slug($value ?: $this->title ?: 'item');
+        $slug = $original;
         $counter = 1;
+        $maxAttempts = 10;
 
-        while (static::where('slug', $slug)->where('id', '!=', $this->id ?? 0)->exists()) {
-            $slug = $originalSlug . '-' . $counter;
+        while (static::withTrashed()
+                ->where('slug', $slug)
+                ->where('id', '!=', $this->id ?? 0)
+                ->exists()) {
+
+            if ($counter > $maxAttempts) {
+                $slug = $original . '-' . substr(md5(uniqid((string) time(), true)), 0, 6);
+                break;
+            }
+
+            $slug = $original . '-' . $counter;
             $counter++;
         }
 
         $this->attributes['slug'] = $slug;
     }
-
-
-
-    
-
-
 }

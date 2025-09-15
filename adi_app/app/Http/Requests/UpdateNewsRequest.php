@@ -6,50 +6,42 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateNewsRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return auth()->check();
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            'title' => [ 'string',"max:1500" , "min:3"],
-            'url' => [ 'string', 'url'],
-            'content' => [ 'string', "max:3000"]
+            'title'   => ['required','string','max:1500','min:3'],
+            'url'     => ['nullable','string','url','max:500'],
+            'content' => ['nullable','string','max:3000'],
         ];
     }
 
-    public function attributes():array
+    public function attributes(): array
     {
         return [
-            'title' => 'judul',
-            'url' => 'url',
+            'title'   => 'judul',
+            'url'     => 'URL',
             'content' => 'konten',
         ];
     }
 
-      public function messages():array
+    public function messages(): array
     {
         return [
-            // 'title.required' => 'Judul wajib diisi',
-            'title.string' => 'Judul harus bertipe text',
-            'title.max' => 'Judul maksimal 1500 karakter',
-            'title.min' => "Judul minimal 3 karakter",
-            // 'url.required' => 'URL wajib diisi',
-            'url.string' => 'URL harus bertipe text',
-            'url.url' => 'Format URL tidak valid. Gunakan format: https://contoh.com',
-            // 'content.required' => 'Kontent wajib diisi',
-            'content.string' => 'Kontent harus bertipe text',
-            'content.max' => 'Kontent maksimal 3000 karakter',
+            'title.required' => 'Judul wajib diisi.',
+            'title.string'   => 'Judul harus berupa teks.',
+            'title.max'      => 'Judul maksimal 1500 karakter.',
+            'title.min'      => 'Judul minimal 3 karakter.',
+
+            'url.url'        => 'Format URL tidak valid. Gunakan format: https://contoh.com',
+            'url.max'        => 'URL maksimal 500 karakter.',
+
+            'content.string' => 'Konten harus berupa teks.',
+            'content.max'    => 'Konten maksimal 3000 karakter.',
         ];
     }
 }

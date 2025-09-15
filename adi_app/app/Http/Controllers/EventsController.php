@@ -22,38 +22,38 @@ class EventsController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'agenda'         => 'nullable|string|max:255',
-            'title'          => 'required|string|max:255',
-            'topics.*.topic' => 'required|string|max:255',
+            'agenda'           => 'nullable|string|max:255',
+            'title'            => 'required|string|max:255',
+            'topics.*.topic'   => 'required|string|max:255',
             'topics.*.content' => 'required|string',
-            'images.*'       => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
+            'images.*'         => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
         ]);
 
+        // === Buat event utama ===
         $event = Events::create([
             'agenda' => $request->agenda,
             'title'  => $request->title,
+            // slug otomatis di-handle oleh mutator setSlugAttribute
         ]);
 
-        // Insert topics
+        // === Insert topics ===
         if ($request->has('topics')) {
             foreach ($request->topics as $topic) {
-                EventTopic::create([
-                    'event_id' => $event->id,
-                    'topic'    => $topic['topic'],
-                    'content'  => $topic['content'],
+                $event->topics()->create([
+                    'topic'   => $topic['topic'],
+                    'content' => $topic['content'],
                 ]);
             }
         }
 
-        // Upload multiple images
+        // === Upload images ===
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $file) {
                 $imageName = time() . '_' . uniqid() . '.' . $file->extension();
                 $file->storeAs('public/events', $imageName);
 
-                EventImage::create([
-                    'event_id' => $event->id,
-                    'image'    => $imageName,
+                $event->images()->create([
+                    'image' => $imageName,
                 ]);
             }
         }
@@ -78,10 +78,12 @@ class EventsController extends Controller
             'title'  => $request->title,
         ]);
 
-        // Update topics (hapus lama, insert baru)
+        // Hapus semua topic lama
         $event->topics()->delete();
-        if ($request->has('topics')) {
-            foreach ($request->topics as $topic) {
+
+        // Tambahkan topic baru (jika ada)
+        foreach($request->topics ?? [] as $topic){
+            if(!empty($topic['topic']) && !empty($topic['content'])){
                 $event->topics()->create([
                     'topic'   => $topic['topic'],
                     'content' => $topic['content'],
@@ -151,7 +153,4 @@ class EventsController extends Controller
         $event->load(['images', 'topics']);
         return view('eventUser.show', compact('event'));
     }
-    
-
-
 }

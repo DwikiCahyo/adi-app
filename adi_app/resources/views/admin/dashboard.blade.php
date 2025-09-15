@@ -52,7 +52,8 @@
                 <tbody class="divide-y divide-gray-300">
                     @foreach($news as $item)
                         <tr class="divide-x divide-gray-300 hover:bg-gray-50 {{ $loop->even ? 'bg-gray-50' : 'bg-white' }}">
-                            <td class="px-4 py-3 border border-gray-300">{{ $item->id }}</td>
+                            {{-- kosong, nanti diisi nomor urut oleh DataTables --}}
+                            <td class="px-4 py-3 border border-gray-300 text-center"></td>
                             <td class="px-4 py-3 font-medium text-gray-900 whitespace-normal break-words max-w-xs">
                                 {{ $item->title }}
                             </td>
@@ -99,14 +100,23 @@
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Title</label>
                                         <input type="text" name="title" class="w-full border rounded p-2" value="{{ $item->title }}">
+                                        @error('title')
+                                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Content</label>
                                         <textarea name="content" class="w-full border rounded p-2" rows="4">{{ $item->content }}</textarea>
+                                        @error('content')
+                                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">URL Thumbnail</label>
-                                        <input type="text" name="thumbnail_url" class="w-full border rounded p-2" value="{{ $item->thumbnail_url }}">
+                                        <input type="text" name="url" class="w-full border rounded p-2" value="{{ $item->url }}">
+                                        @error('url')
+                                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
                                     </div>
                                     <div class="flex justify-end space-x-2">
                                         <button type="button" onclick="closeModal('editModal-{{ $item->id }}')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
@@ -130,14 +140,23 @@
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Title</label>
                     <input type="text" name="title" value="{{ old('title') }}" class="w-full border rounded p-2">
+                    @error('title')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Content</label>
                     <textarea name="content" class="w-full border rounded p-2" rows="4">{{ old('content') }}</textarea>
+                    @error('content')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium">URL Thumbnail</label>
                     <input type="text" name="url" value="{{ old('url') }}" class="w-full border rounded p-2">
+                    @error('url')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="flex justify-end space-x-2">
                     <button type="button" onclick="closeModal('createModal')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
@@ -156,7 +175,7 @@
 
     <script>
         $(document).ready(function () {
-            $('#newsTable').DataTable({
+            let table = $('#newsTable').DataTable({
                 responsive: {
                     breakpoints: [
                         { name: 'desktop', width: Infinity },
@@ -187,8 +206,21 @@
                     infoEmpty: "Tidak ada data tersedia",
                     infoFiltered: "(difilter dari total _MAX_ data)",
                     emptyTable: "Belum ada data news."
-                }
+                },
+                columnDefs: [{
+                    targets: 0, // kolom pertama (ID)
+                    orderable: false,
+                    searchable: false
+                }],
+                order: [[1, 'asc']] // default sort by Title
             });
+
+            // reindex nomor urut
+            table.on('order.dt search.dt draw.dt', function () {
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each((cell, i) => {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
 
             // auto open modal kalau validasi error
             @if($errors->any())

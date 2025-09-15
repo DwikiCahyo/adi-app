@@ -28,14 +28,12 @@ class Events extends Model
         'deleted_at' => 'datetime',
     ];
 
-    /**
-     * Boot model hooks
-     */
     protected static function booted(): void
     {
         static::creating(function (Events $event) {
+            // assign title ke atribut slug -> akan memicu mutator setSlugAttribute
             if (empty($event->slug)) {
-                $event->slug = Str::slug($event->title);
+                $event->slug = $event->title; // jangan slugify di sini, biarkan mutator yg handle
             }
 
             if (auth()->check()) {
@@ -53,66 +51,30 @@ class Events extends Model
         static::deleting(function (Events $event) {
             if (auth()->check()) {
                 $event->deleted_by = auth()->id();
-                $event->save();
+                // simpan tanpa memicu event lagi agar deleted_by tercatat
+                if (method_exists($event, 'saveQuietly')) {
+                    $event->saveQuietly();
+                } else {
+                    // fallback jika versi laravel lama
+                    $event->save();
+                }
             }
         });
     }
 
-    /**
-     * Relationships
-     */
-    public function creator(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
+    // relationships...
+    public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
+    public function updater(): BelongsTo { return $this->belongsTo(User::class, 'updated_by'); }
+    public function deleter(): BelongsTo { return $this->belongsTo(User::class, 'deleted_by'); }
 
-    public function updater(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'updated_by');
-    }
+    public function images() { return $this->hasMany(EventImage::class, 'event_id'); }
+    public function topics() { return $this->hasMany(EventTopic::class, 'event_id'); }
 
-    public function deleter(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'deleted_by');
-    }
+    public function scopeActive($query) { return $query->whereNull('deleted_at'); }
+    public function scopeByCreator($query, $userId) { return $query->where('created_by', $userId); }
+    public function scopeRecent($query, $days = 30) { return $query->where('created_at', '>=', now()->subDays($days)); }
 
-    // Relasi ke tabel images
-    public function images()
-    {
-        return $this->hasMany(EventImage::class, 'event_id');
-    }
-
-    // Relasi ke tabel topics
-    public function topics()
-    {
-        return $this->hasMany(EventTopic::class, 'event_id');
-    }
-
-    /**
-     * Query Scopes
-     */
-    public function scopeActive($query)
-    {
-        return $query->whereNull('deleted_at');
-    }
-
-    public function scopeByCreator($query, $userId)
-    {
-        return $query->where('created_by', $userId);
-    }
-
-    public function scopeRecent($query, $days = 30)
-    {
-        return $query->where('created_at', '>=', now()->subDays($days));
-    }
-
-    /**
-     * Route binding with slug
-     */
-    public function getRouteKeyName(): string
-    {
-        return 'slug';
-    }
+    public function getRouteKeyName(): string { return 'slug'; }
 
     public function resolveRouteBinding($value, $field = null)
     {
@@ -128,16 +90,29 @@ class Events extends Model
     }
 
     /**
-     * Slug setter auto unique
+     * Mutator untuk slug — pastikan unik (cek juga soft-deleted)
      */
     public function setSlugAttribute($value): void
     {
-        $slug = Str::slug($value);
-        $originalSlug = $slug;
+        // nilai dasar (fallback ke title apabila $value kosong)
+        $original = Str::slug($value ?: $this->title ?: 'item');
+        $slug = $original;
         $counter = 1;
+        $maxAttempts = 10;
 
-        while (static::where('slug', $slug)->where('id', '!=', $this->id ?? 0)->exists()) {
-            $slug = $originalSlug . '-' . $counter;
+        // periksa termasuk yang soft-deleted supaya tidak ada konflik
+        while (static::withTrashed()
+                ->where('slug', $slug)
+                ->where('id', '!=', $this->id ?? 0)
+                ->exists()) {
+
+            if ($counter > $maxAttempts) {
+                // setelah beberapa percobaan, tambahkan fingerprint agar pasti unik
+                $slug = $original . '-' . substr(md5(uniqid((string) time(), true)), 0, 6);
+                break;
+            }
+
+            $slug = $original . '-' . $counter;
             $counter++;
         }
 

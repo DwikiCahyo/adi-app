@@ -53,7 +53,7 @@
                    class="min-w-full text-sm text-left text-gray-700 border border-gray-300">
                 <thead class="text-xs text-gray-800 uppercase bg-gray-200">
                     <tr class="divide-x divide-gray-300">
-                        <th class="px-4 py-3 border border-gray-300 rounded-tl-lg">#</th>
+                        <th class="px-4 py-3 border border-gray-300 rounded-tl-lg">No</th>
                         <th class="px-4 py-3 border border-gray-300">Agenda</th>
                         <th class="px-4 py-3 border border-gray-300">Title</th>
                         <th class="px-4 py-3 border border-gray-300">Topic & Content</th>
@@ -65,7 +65,7 @@
                 <tbody class="divide-y divide-gray-300">
                     @foreach($event as $item)
                         <tr class="divide-x divide-gray-300 hover:bg-gray-50 {{ $loop->even ? 'bg-gray-50' : 'bg-white' }}">
-                            <td class="px-4 py-3 border border-gray-300">{{ $item->id }}</td>
+                            <td class="px-4 py-3 border border-gray-300">{{ $loop->iteration }}</td>
                             <td class="px-4 py-3 border border-gray-300 font-medium text-gray-900">{{ $item->agenda }}</td>
                             <td class="px-4 py-3 border border-gray-300 font-medium text-gray-900">{{ $item->title }}</td>
                             <td class="px-4 py-3 border border-gray-300">
@@ -154,9 +154,6 @@
                                                 </div>
                                             </div>
                                         @endforeach
-                                    </div>
-                                    <div class="flex justify-end mb-4">
-                                        <button type="button" onclick="addTopic('editTopics-{{ $item->id }}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm">+ Topic</button>
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Upload Images</label>
@@ -260,12 +257,12 @@
 
         function addTopic(containerId) {
             let container = document.getElementById(containerId);
-            let index = container.querySelectorAll('.topic-item').length;
+            let tIndex = container.querySelectorAll('.topic-item').length;
             let div = document.createElement('div');
             div.classList.add('border', 'p-3', 'rounded', 'topic-item', 'space-y-2');
             div.innerHTML = `
-                <input type="text" name="topics[${index}][topic]" class="w-full border rounded p-2" placeholder="Judul Topic" required>
-                <textarea name="topics[${index}][content]" rows="3" class="w-full border rounded p-2" placeholder="Isi Konten" required></textarea>
+                <input type="text" name="topics[${tIndex}][topic]" class="w-full border rounded p-2" placeholder="Judul Topic" required>
+                <textarea name="topics[${tIndex}][content]" rows="3" class="w-full border rounded p-2" placeholder="Isi Konten" required></textarea>
                 <div class="flex justify-end">
                     <button type="button" class="remove-topic bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs">Hapus</button>
                 </div>
