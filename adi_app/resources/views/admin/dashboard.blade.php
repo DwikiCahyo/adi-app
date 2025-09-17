@@ -6,9 +6,48 @@
                     {{ __('News Feed') }}
                 </x-nav-link>
                 
-                <x-nav-link :href="route('resource')" :active="request()->routeIs('resource')">
-                    {{ __('Resource') }}
-                </x-nav-link>
+                <div x-data="{ open: false }" class="relative">
+                    <!-- Toggle Button -->
+                    <button 
+                        @click="open = !open" 
+                        class="flex items-center px-3 py-2 text-gray-700 hover:text-gray-900 focus:outline-none"
+                    >
+                        <span>Resource</span>
+                        <svg 
+                            class="w-4 h-4 ml-1 transform transition-transform duration-200"
+                            :class="{ 'rotate-180': open }" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                        >
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div 
+                        x-show="open" 
+                        x-transition
+                        @click.away="open = false"
+                        class="absolute left-0 mt-2 w-auto min-w-max bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+                    >
+                        <div class="flex flex-col">
+                            <x-nav-link 
+                                :href="route('admin.resource.index')" 
+                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-t-lg"
+                            >
+                                + Add Latest Sermon
+                            </x-nav-link>
+
+                            <x-nav-link 
+                                :href="route('admin.resourcefile.file')" 
+                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-b-lg"
+                            >
+                                + Add Good News
+                            </x-nav-link>
+                        </div>
+                    </div>
+                </div>
                 
                 <x-nav-link :href="route('admin.event.index')" :active="request()->routeIs('admin.event.index')">
                     {{ __('Events') }}
