@@ -6,9 +6,48 @@
                     {{ __('News Feed') }}
                 </x-nav-link>
                
-                <x-nav-link :href="route('resource')" :active="request()->routeIs('resource')">
-                    {{ __('Resource') }}
-                </x-nav-link>
+                <div x-data="{ open: false }" class="relative">
+                    <!-- Toggle Button -->
+                    <button 
+                        @click="open = !open" 
+                        class="flex items-center px-3 py-2 text-gray-700 hover:text-gray-900 focus:outline-none"
+                    >
+                        <span>Resource</span>
+                        <svg 
+                            class="w-4 h-4 ml-1 transform transition-transform duration-200"
+                            :class="{ 'rotate-180': open }" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                        >
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div 
+                        x-show="open" 
+                        x-transition
+                        @click.away="open = false"
+                        class="absolute left-0 mt-2 w-auto min-w-max bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+                    >
+                        <div class="flex flex-col">
+                            <x-nav-link 
+                                :href="route('admin.resource.index')" 
+                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-t-lg"
+                            >
+                                + Add Latest Sermon
+                            </x-nav-link>
+
+                            <x-nav-link 
+                                :href="route('admin.resourcefile.file')" 
+                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-b-lg"
+                            >
+                                + Add Good News
+                            </x-nav-link>
+                        </div>
+                    </div>
+                </div>
 
                 <x-nav-link :href="route('admin.event.index')" :active="request()->routeIs('admin.event.index')">
                     {{ __('Events') }}
@@ -25,7 +64,7 @@
             </div>
         @endif
 
-        {{-- Error Global --}}
+        {{-- Error Global
         @if ($errors->any())
             <div class="mb-4 p-4 text-red-800 bg-red-200 rounded-lg">
                 <ul class="list-disc ps-5">
@@ -34,7 +73,7 @@
                     @endforeach
                 </ul>
             </div>
-        @endif
+        @endif --}}
 
         {{-- Header --}}
         <div class="flex justify-between items-center mb-6">
@@ -178,31 +217,63 @@
             <h2 class="text-xl font-bold mb-4">Tambah Event</h2>
             <form action="{{ route('admin.event.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
+
+                {{-- Agenda --}}
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Agenda</label>
-                    <input type="text" name="agenda" value="{{ old('agenda') }}" class="w-full border rounded p-2" required>
+                    <input type="text" name="agenda" value="{{ old('agenda') }}"
+                        class="w-full border rounded p-2 @error('agenda') border-red-500 @enderror">
+                    @error('agenda')
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
+
+                {{-- Title --}}
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Title</label>
-                    <input type="text" name="title" value="{{ old('title') }}" class="w-full border rounded p-2" required>
+                    <input type="text" name="title" value="{{ old('title') }}"
+                        class="w-full border rounded p-2 @error('title') border-red-500 @enderror">
+                    @error('title')
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
+
+                {{-- Topics --}}
                 <div id="topics-container" class="mb-4 space-y-4">
                     <label class="block text-sm font-medium">Topics</label>
                     <div class="border p-3 rounded topic-item space-y-2">
-                        <input type="text" name="topics[0][topic]" class="w-full border rounded p-2" placeholder="Judul Topic" required>
-                        <textarea name="topics[0][content]" rows="3" class="w-full border rounded p-2" placeholder="Isi Konten" required></textarea>
+                        <input type="text" name="topics[0][topic]" value="{{ old('topics.0.topic') }}"
+                            class="w-full border rounded p-2 @error('topics.0.topic') border-red-500 @enderror" placeholder="Judul Topic">
+                        @error('topics.0.topic')
+                            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+
+                        <textarea name="topics[0][content]" rows="3"
+                                class="w-full border rounded p-2 @error('topics.0.content') border-red-500 @enderror" placeholder="Isi Konten">{{ old('topics.0.content') }}</textarea>
+                        @error('topics.0.content')
+                            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+
                         <div class="flex justify-end">
                             <button type="button" class="remove-topic bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs">Hapus</button>
                         </div>
                     </div>
                 </div>
+
                 <div class="flex justify-end mb-4">
-                    <button type="button" onclick="addTopic('topics-container')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm">+ Topic</button>
+                    <button type="button" onclick="addTopic('topics-container')"
+                            class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm">+ Topic</button>
                 </div>
+
+                {{-- Images --}}
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Upload Images</label>
-                    <input type="file" name="images[]" class="w-full border rounded p-2" multiple>
+                    <input type="file" name="images[]" class="w-full border rounded p-2 @error('images.*') border-red-500 @enderror" multiple>
+                    @error('images.*')
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
+
                 <div class="flex justify-end space-x-2">
                     <button type="button" onclick="closeModal('createModal')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
                     <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Simpan</button>
@@ -210,6 +281,7 @@
             </form>
         </div>
     </div>
+
 
     {{-- Gallery Modal --}}
     <div id="galleryModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center">

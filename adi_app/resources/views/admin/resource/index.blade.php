@@ -48,7 +48,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <x-nav-link :href="route('admin.event.index')" :active="request()->routeIs('admin.event.index')">
                     {{ __('Events') }}
                 </x-nav-link>
@@ -66,18 +66,18 @@
 
         {{-- Header --}}
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold">📰 Daftar News</h1>
+            <h1 class="text-2xl font-bold">Latest Sermon</h1>
             <button 
                 onclick="openModal('createModal')"
                 class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow"
             >
-                + Tambah News
+                + Tambah Resource
             </button>
         </div>
 
         {{-- Tabel DataTables --}}
         <div class="bg-white rounded-lg shadow p-4 overflow-x-auto">
-            <table id="newsTable" class="min-w-full text-sm text-left text-gray-700 border border-gray-300">
+            <table id="resourceTable" class="min-w-full text-sm text-left text-gray-700 border border-gray-300">
                 <thead class="text-xs text-gray-800 uppercase bg-gray-200">
                     <tr class="divide-x divide-gray-300">
                         <th class="px-4 py-3 border border-gray-300 rounded-tl-lg">ID</th>
@@ -89,9 +89,8 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-300">
-                    @foreach($news as $item)
+                    @foreach($resource as $item)
                         <tr class="divide-x divide-gray-300 hover:bg-gray-50 {{ $loop->even ? 'bg-gray-50' : 'bg-white' }}">
-                            {{-- kosong, nanti diisi nomor urut oleh DataTables --}}
                             <td class="px-4 py-3 border border-gray-300 text-center"></td>
                             <td class="px-4 py-3 font-medium text-gray-900 whitespace-normal break-words max-w-xs">
                                 {{ $item->title }}
@@ -119,7 +118,7 @@
                                         class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-sm">
                                     Edit
                                 </button>
-                                <form action="{{ route('admin.dashboard.destroy', $item->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Yakin mau hapus?')">
+                                <form action="{{ route('admin.resource.destroy', $item->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Yakin mau hapus?')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg text-sm">
@@ -132,30 +131,21 @@
                         {{-- Modal Edit --}}
                         <div id="editModal-{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
                             <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
-                                <h2 class="text-xl font-bold mb-4">Edit News</h2>
-                                <form action="{{ route('admin.dashboard.update', $item->id) }}" method="POST">
+                                <h2 class="text-xl font-bold mb-4">Edit Resource</h2>
+                                <form action="{{ route('admin.resource.update', $item->id) }}" method="POST">
                                     @csrf
                                     @method('PUT')
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Title</label>
                                         <input type="text" name="title" class="w-full border rounded p-2" value="{{ $item->title }}">
-                                        @error('title')
-                                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                                        @enderror
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Content</label>
                                         <textarea name="content" class="w-full border rounded p-2" rows="4">{{ $item->content }}</textarea>
-                                        @error('content')
-                                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                                        @enderror
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">URL Thumbnail</label>
                                         <input type="text" name="url" class="w-full border rounded p-2" value="{{ $item->url }}">
-                                        @error('url')
-                                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                                        @enderror
                                     </div>
                                     <div class="flex justify-end space-x-2">
                                         <button type="button" onclick="closeModal('editModal-{{ $item->id }}')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
@@ -173,29 +163,20 @@
     {{-- Modal Create --}}
     <div id="createModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
         <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
-            <h2 class="text-xl font-bold mb-4">Tambah News</h2>
-            <form action="{{ route('admin.dashboard.store') }}" method="POST">
+            <h2 class="text-xl font-bold mb-4">Tambah Resource</h2>
+            <form action="{{ route('admin.resource.store') }}" method="POST">
                 @csrf
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Title</label>
                     <input type="text" name="title" value="{{ old('title') }}" class="w-full border rounded p-2">
-                    @error('title')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Content</label>
                     <textarea name="content" class="w-full border rounded p-2" rows="4">{{ old('content') }}</textarea>
-                    @error('content')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium">URL Thumbnail</label>
                     <input type="text" name="url" value="{{ old('url') }}" class="w-full border rounded p-2">
-                    @error('url')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
                 </div>
                 <div class="flex justify-end space-x-2">
                     <button type="button" onclick="closeModal('createModal')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
@@ -205,6 +186,7 @@
         </div>
     </div>
 
+    {{-- DataTable --}}
     {{-- DataTable CSS & JS --}}
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.css" />
@@ -214,66 +196,64 @@
 
     <script>
         $(document).ready(function () {
-            let table = $('#newsTable').DataTable({
-                responsive: {
-                    breakpoints: [
-                        { name: 'desktop', width: Infinity },
-                        { name: 'tablet',  width: 1024 },
-                        { name: 'mobile',  width: 640 }
-                    ],
-                    details: {
-                        renderer: function ( api, rowIdx, columns ) {
-                            let data = $.map(columns, function (col) {
-                                return col.hidden
-                                    ? `<div class="flex flex-col sm:flex-row sm:items-start sm:gap-2 py-2 border-b">
-                                            <span class="font-bold text-gray-800 min-w-[100px]">${col.title} :</span>
-                                            <span class="text-gray-600 break-words">${col.data}</span>
-                                       </div>`
-                                    : '';
-                            }).join('');
-                            return data ? $('<div class="p-3"/>').append(data) : false;
-                        }
+        let table = $('#resourceTable').DataTable({
+            responsive: {
+                breakpoints: [
+                    { name: 'desktop', width: Infinity },
+                    { name: 'tablet',  width: 1024 },
+                    { name: 'mobile',  width: 640 }
+                ],
+                details: {
+                    renderer: function ( api, rowIdx, columns ) {
+                        let data = $.map(columns, function (col) {
+                            return col.hidden
+                                ? `<div class="flex flex-col sm:flex-row sm:items-start sm:gap-2 py-2 border-b">
+                                        <span class="font-bold text-gray-800 min-w-[100px]">${col.title} :</span>
+                                        <span class="text-gray-600 break-words">${col.data}</span>
+                                   </div>`
+                                : '';
+                        }).join('');
+                        return data ? $('<div class="p-3"/>').append(data) : false;
                     }
-                },
-                pageLength: 10,
-                lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Semua"] ],
-                language: {
-                    search: "Cari:",
-                    lengthMenu: "Tampilkan _MENU_ data per halaman",
-                    zeroRecords: "Tidak ada data",
-                    info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-                    infoEmpty: "Tidak ada data tersedia",
-                    infoFiltered: "(difilter dari total _MAX_ data)",
-                    emptyTable: "Belum ada data news."
-                },
-                columnDefs: [{
-                    targets: 0, // kolom pertama (ID)
-                    orderable: false,
-                    searchable: false
-                }],
-                order: [[1, 'asc']] // default sort by Title
-            });
-
-            // reindex nomor urut
+                }
+            },
+            pageLength: 10,
+            lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Semua"] ],
+            language: {
+                search: "Cari:",
+                lengthMenu: "Tampilkan _MENU_ data per halaman",
+                zeroRecords: "Tidak ada data",
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                infoEmpty: "Tidak ada data tersedia",
+                infoFiltered: "(difilter dari total _MAX_ data)",
+                emptyTable: "Belum ada data resource."
+            },
+            columnDefs: [{
+                targets: 0, // kolom nomor urut
+                orderable: false,
+                searchable: false
+            }],
+            order: [[1, 'asc']] // urut default: Title
+        });
+    
             table.on('order.dt search.dt draw.dt', function () {
                 table.column(0, { search: 'applied', order: 'applied' }).nodes().each((cell, i) => {
                     cell.innerHTML = i + 1;
                 });
             }).draw();
-
-            // auto open modal kalau validasi error
+    
             @if($errors->any())
                 openModal('createModal');
             @endif
         });
-
+    
         function openModal(id) {
             document.getElementById(id).classList.remove('hidden');
         }
         function closeModal(id) {
             document.getElementById(id).classList.add('hidden');
         }
-
+    
         // auto hide flash message
         setTimeout(() => {
             let flash = document.getElementById('flash-message');
@@ -283,4 +263,5 @@
             }
         }, 3000);
     </script>
+    
 </x-app-layout>

@@ -22,12 +22,19 @@ class EventsController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'agenda'           => 'nullable|string|max:255',
-            'title'            => 'required|string|max:255',
-            'topics.*.topic'   => 'required|string|max:255',
-            'topics.*.content' => 'required|string',
-            'images.*'         => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
+            'agenda'            => 'required|string|max:255',
+            'title'             => 'required|string|max:255',
+            'topics.*.topic'    => 'required|string|max:255',
+            'topics.*.content'  => 'required|string',
+            'images.*'          => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        ], [
+            'agenda.required' => 'Agenda wajib diisi.',
+            'title.required' => 'Judul wajib diisi.',
+            'topics.*.topic.required' => 'Judul topik wajib diisi.',
+            'topics.*.content.required' => 'Isi konten wajib diisi.',
+            'images.*.image' => 'File harus berupa gambar.',
         ]);
+        
 
         // === Buat event utama ===
         $event = Events::create([
