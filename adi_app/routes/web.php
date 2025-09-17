@@ -3,6 +3,8 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\EventsController;
+use App\Http\Controllers\ResourceController;
+use App\Http\Controllers\ResourceFileController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -37,13 +39,15 @@ Route::get('/ministry', function () {
     return view('ministry');
 })->middleware(['auth', 'verified'])->name('ministry');
 
+// User Profile
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-//User
+//Guest
+//News
 Route::prefix('news')->group(function() {
     Route::get('/', [NewsController::class, 'index'])->name('news.index');
     Route::get('/{news}', [NewsController::class, 'show'])->name('news.show');
@@ -51,27 +55,55 @@ Route::prefix('news')->group(function() {
 
 //Event
 Route::prefix('event')->group(function() {
-    Route::get('/events', [EventsController::class, 'indexUser'])->name('events.index');
+    Route::get('/', [EventsController::class, 'indexUser'])->name('events.index');
     Route::get('/events/{event}', [EventsController::class, 'showUser'])->name('events.showUser');
 });
 
+//Resource
+Route::prefix('resource')->group(function() {
+    Route::get('/', [ResourceController::class, 'index'])->name('resource.index');
+    // Show Latest Sermon
+    Route::get('/LatestSermon/show', [ResourceController::class, 'show'])->name('resource.show');
+
+    // Show Good News
+    Route::get('/GoodNews/show', [ResourceFileController::class, 'show'])->name('resourcefile.show');
+    Route::get('/GoodNews/{id}', [ResourceFileController::class, 'showfile'])->name('resourcefile.showfile');
+    Route::get('/GoodNews/{id}/download', [ResourceFileController::class, 'download'])->name('resourcefile.download');
+});
+
+///////////////////////////////////////////////**************************************/////////////////////////////////////////////////////////////
+
+// Admin
 Route::middleware(['auth', 'verified'])->group(function () {
     // Halaman Admin Dashboard
     Route::get('/dashboard', [NewsController::class, 'NewsAdmin'])->name('admin.dashboard');
-    
-    // CRUD News Admin
+    // News Admin
     Route::post('/dashboard', [NewsController::class, 'store'])->name('admin.dashboard.store');
     Route::put('/dashboard/{news}', [NewsController::class, 'update'])->name('admin.dashboard.update');
     Route::delete('/dashboard/{news}', [NewsController::class, 'destroy'])->name('admin.dashboard.destroy');
     
     //Halaman Admin Event
     Route::get('/eventsAdmin', [EventsController::class, 'index'])->name('admin.event.index');
-    // Events
+    // Events Admin
     Route::post('/eventsAdmin', [EventsController::class, 'store'])->name('admin.event.store');
-    Route::put('/eventsAdmin/{news}', [EventsController::class, 'update'])->name('admin.event.update');
-    Route::delete('/eventsAdmin/{news}', [EventsController::class, 'destroy'])->name('admin.event.destroy');
+    Route::put('/eventsAdmin/{event}', [EventsController::class, 'update'])->name('admin.event.update');
+    Route::delete('/eventsAdmin/{event}', [EventsController::class, 'destroy'])->name('admin.event.destroy');
 
-    // Route::resource('/eventsAdmin', EventsController::class);
+    //Halaman Admin Resource
+    Route::get('/resourceAdmin', [ResourceController::class, 'ResourceAdmin'])->name('admin.resource.index');
+    // Resource Admin
+    Route::post('/resourceAdmin', [ResourceController::class, 'store'])->name('admin.resource.store');
+    Route::put('/resourceAdmin/{resource}', [ResourceController::class, 'update'])->name('admin.resource.update');
+    Route::delete('/resourceAdmin/{resource}', [ResourceController::class, 'destroy'])->name('admin.resource.destroy');
+
+    //Halaman Admin ResourceFile
+    Route::get('/resourcefileAdmin', [ResourceFileController::class, 'ResourceFileAdmin'])->name('admin.resourcefile.file');
+    // Resource File Admin
+    Route::post('/resourcefileAdmin', [ResourceFileController::class, 'store'])->name('admin.resourcefile.store');
+    Route::put('/resourcefileAdmin/{resource}', [ResourceFileController::class, 'update'])->name('admin.resourcefile.update');
+    Route::delete('/resourcefileAdmin/{resource}', [ResourceFileController::class, 'destroy'])->name('admin.resourcefile.destroy');
+
+
 });
     
 require __DIR__.'/auth.php';

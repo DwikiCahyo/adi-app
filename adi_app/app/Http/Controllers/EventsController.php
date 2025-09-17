@@ -33,7 +33,6 @@ class EventsController extends Controller
             'topics.*.topic.required' => 'Judul topik wajib diisi.',
             'topics.*.content.required' => 'Isi konten wajib diisi.',
             'images.*.image' => 'File harus berupa gambar.',
-
         ]);
         
 

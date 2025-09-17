@@ -5,9 +5,9 @@
         <span class="text-sm">News Feed</span>
     </a>
 
-    <a href="{{ route('resource') }}" 
+    <a href="{{ route('resource.index') }}" 
        class="flex flex-col items-center py-2 
-              {{ request()->routeIs('resource') ? 'text-white border-b-2 border-white font-medium' : 'text-white hover:text-gray-200' }}">
+              {{ request()->routeIs('resource.index') ? 'text-white border-b-2 border-white font-medium' : 'text-white hover:text-gray-200' }}">
         <span class="text-sm">Resources</span>
     </a>
 
