@@ -6,9 +6,48 @@
                     {{ __('News Feed') }}
                 </x-nav-link>
                
-                <x-nav-link :href="route('resource')" :active="request()->routeIs('resource')">
-                    {{ __('Resource') }}
-                </x-nav-link>
+                <div x-data="{ open: false }" class="relative">
+                    <!-- Toggle Button -->
+                    <button 
+                        @click="open = !open" 
+                        class="flex items-center px-3 py-2 text-gray-700 hover:text-gray-900 focus:outline-none"
+                    >
+                        <span>Resource</span>
+                        <svg 
+                            class="w-4 h-4 ml-1 transform transition-transform duration-200"
+                            :class="{ 'rotate-180': open }" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                        >
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div 
+                        x-show="open" 
+                        x-transition
+                        @click.away="open = false"
+                        class="absolute left-0 mt-2 w-auto min-w-max bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+                    >
+                        <div class="flex flex-col">
+                            <x-nav-link 
+                                :href="route('admin.resource.index')" 
+                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-t-lg"
+                            >
+                                + Add Latest Sermon
+                            </x-nav-link>
+
+                            <x-nav-link 
+                                :href="route('admin.resourcefile.file')" 
+                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-b-lg"
+                            >
+                                + Add Good News
+                            </x-nav-link>
+                        </div>
+                    </div>
+                </div>
 
                 <x-nav-link :href="route('admin.event.index')" :active="request()->routeIs('admin.event.index')">
                     {{ __('Events') }}
@@ -25,8 +64,8 @@
             </div>
         @endif
 
-        {{-- Error Global --}}
-        {{-- @if ($errors->any())
+        {{-- Error Global
+        @if ($errors->any())
             <div class="mb-4 p-4 text-red-800 bg-red-200 rounded-lg">
                 <ul class="list-disc ps-5">
                     @foreach ($errors->all() as $error)
@@ -53,7 +92,7 @@
                    class="min-w-full text-sm text-left text-gray-700 border border-gray-300">
                 <thead class="text-xs text-gray-800 uppercase bg-gray-200">
                     <tr class="divide-x divide-gray-300">
-                        <th class="px-4 py-3 border border-gray-300 rounded-tl-lg">#</th>
+                        <th class="px-4 py-3 border border-gray-300 rounded-tl-lg">No</th>
                         <th class="px-4 py-3 border border-gray-300">Agenda</th>
                         <th class="px-4 py-3 border border-gray-300">Title</th>
                         <th class="px-4 py-3 border border-gray-300">Topic & Content</th>
@@ -65,7 +104,7 @@
                 <tbody class="divide-y divide-gray-300">
                     @foreach($event as $item)
                         <tr class="divide-x divide-gray-300 hover:bg-gray-50 {{ $loop->even ? 'bg-gray-50' : 'bg-white' }}">
-                            <td class="px-4 py-3 border border-gray-300">{{ $item->id }}</td>
+                            <td class="px-4 py-3 border border-gray-300">{{ $loop->iteration }}</td>
                             <td class="px-4 py-3 border border-gray-300 font-medium text-gray-900">{{ $item->agenda }}</td>
                             <td class="px-4 py-3 border border-gray-300 font-medium text-gray-900">{{ $item->title }}</td>
                             <td class="px-4 py-3 border border-gray-300">
@@ -129,11 +168,6 @@
                         {{-- Modal Edit --}}
                         <div id="editModal-{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
                             <div class="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-screen overflow-y-auto p-6">
-                                 @if ($errors->has('general'))
-                                    <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
-                                            {{ $errors->first('general') }}
-                                    </div>
-                                @endif
                                 <h2 class="text-xl font-bold mb-4">Edit Event</h2>
                                 <form action="{{ route('admin.event.update', $item->id) }}" method="POST" enctype="multipart/form-data">
                                     @csrf
@@ -152,7 +186,6 @@
                                         <label class="block text-sm font-medium">Topics</label>
                                         @foreach($item->topics as $tIndex => $topic)
                                             <div class="border p-3 rounded topic-item space-y-2">
-                                                <input type="hidden" name="topics[{{ $tIndex }}][id]" value="{{ $topic->id }}">
                                                 <input type="text" name="topics[{{ $tIndex }}][topic]" value="{{ $topic->topic }}" class="w-full border rounded p-2" placeholder="Judul Topic" required>
                                                 <textarea name="topics[{{ $tIndex }}][content]" rows="3" class="w-full border rounded p-2" placeholder="Isi Konten" required>{{ $topic->content }}</textarea>
                                                 <div class="flex justify-end">
@@ -160,9 +193,6 @@
                                                 </div>
                                             </div>
                                         @endforeach
-                                    </div>
-                                    <div class="flex justify-end mb-4">
-                                        <button type="button" onclick="addTopic('editTopics-{{ $item->id }}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm">+ Topic</button>
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Upload Images</label>
@@ -184,54 +214,66 @@
     {{-- Modal Create --}}
     <div id="createModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
         <div class="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-screen overflow-y-auto p-6">
-            @if ($errors->has('general'))
-                <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">
-                        {{ $errors->first('general') }}
-                </div>
-            @endif
             <h2 class="text-xl font-bold mb-4">Tambah Event</h2>
             <form action="{{ route('admin.event.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
+
+                {{-- Agenda --}}
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Agenda</label>
-                    <input type="text" name="agenda" value="{{ old('agenda') }}" class="w-full border rounded p-2">
+                    <input type="text" name="agenda" value="{{ old('agenda') }}"
+                        class="w-full border rounded p-2 @error('agenda') border-red-500 @enderror">
                     @error('agenda')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>
+
+                {{-- Title --}}
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Title</label>
-                    <input type="text" name="title" value="{{ old('title') }}" class="w-full border rounded p-2">
+                    <input type="text" name="title" value="{{ old('title') }}"
+                        class="w-full border rounded p-2 @error('title') border-red-500 @enderror">
                     @error('title')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>
+
+                {{-- Topics --}}
                 <div id="topics-container" class="mb-4 space-y-4">
                     <label class="block text-sm font-medium">Topics</label>
                     <div class="border p-3 rounded topic-item space-y-2">
-                        <input type="text" name="topics[0][topic]" class="w-full border rounded p-2" placeholder="Judul Topic" >
-                        @error('topics.*.topic')
-                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                         @enderror
-                        <textarea name="topics[0][content]" rows="3" class="w-full border rounded p-2" placeholder="Isi Konten" ></textarea>
-                        @error('topics.*.content')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        <input type="text" name="topics[0][topic]" value="{{ old('topics.0.topic') }}"
+                            class="w-full border rounded p-2 @error('topics.0.topic') border-red-500 @enderror" placeholder="Judul Topic">
+                        @error('topics.0.topic')
+                            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                         @enderror
+
+                        <textarea name="topics[0][content]" rows="3"
+                                class="w-full border rounded p-2 @error('topics.0.content') border-red-500 @enderror" placeholder="Isi Konten">{{ old('topics.0.content') }}</textarea>
+                        @error('topics.0.content')
+                            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+
                         <div class="flex justify-end">
                             <button type="button" class="remove-topic bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs">Hapus</button>
                         </div>
                     </div>
                 </div>
+
                 <div class="flex justify-end mb-4">
-                    <button type="button" onclick="addTopic('topics-container')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm">+ Topic</button>
+                    <button type="button" onclick="addTopic('topics-container')"
+                            class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm">+ Topic</button>
                 </div>
+
+                {{-- Images --}}
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Upload Images</label>
-                    <input type="file" name="images[]" class="w-full border rounded p-2" multiple>
-                     @error('images.*')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                        @enderror
+                    <input type="file" name="images[]" class="w-full border rounded p-2 @error('images.*') border-red-500 @enderror" multiple>
+                    @error('images.*')
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
+
                 <div class="flex justify-end space-x-2">
                     <button type="button" onclick="closeModal('createModal')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
                     <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Simpan</button>
@@ -239,6 +281,7 @@
             </form>
         </div>
     </div>
+
 
     {{-- Gallery Modal --}}
     <div id="galleryModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center">
@@ -286,12 +329,12 @@
 
         function addTopic(containerId) {
             let container = document.getElementById(containerId);
-            let index = container.querySelectorAll('.topic-item').length;
+            let tIndex = container.querySelectorAll('.topic-item').length;
             let div = document.createElement('div');
             div.classList.add('border', 'p-3', 'rounded', 'topic-item', 'space-y-2');
             div.innerHTML = `
-                <input type="text" name="topics[${index}][topic]" class="w-full border rounded p-2" placeholder="Judul Topic" >
-                <textarea name="topics[${index}][content]" rows="3" class="w-full border rounded p-2" placeholder="Isi Konten" ></textarea>
+                <input type="text" name="topics[${tIndex}][topic]" class="w-full border rounded p-2" placeholder="Judul Topic" required>
+                <textarea name="topics[${tIndex}][content]" rows="3" class="w-full border rounded p-2" placeholder="Isi Konten" required></textarea>
                 <div class="flex justify-end">
                     <button type="button" class="remove-topic bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs">Hapus</button>
                 </div>

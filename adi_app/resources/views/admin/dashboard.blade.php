@@ -6,9 +6,48 @@
                     {{ __('News Feed') }}
                 </x-nav-link>
                 
-                <x-nav-link :href="route('resource')" :active="request()->routeIs('resource')">
-                    {{ __('Resource') }}
-                </x-nav-link>
+                <div x-data="{ open: false }" class="relative">
+                    <!-- Toggle Button -->
+                    <button 
+                        @click="open = !open" 
+                        class="flex items-center px-3 py-2 text-gray-700 hover:text-gray-900 focus:outline-none"
+                    >
+                        <span>Resource</span>
+                        <svg 
+                            class="w-4 h-4 ml-1 transform transition-transform duration-200"
+                            :class="{ 'rotate-180': open }" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                        >
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div 
+                        x-show="open" 
+                        x-transition
+                        @click.away="open = false"
+                        class="absolute left-0 mt-2 w-auto min-w-max bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+                    >
+                        <div class="flex flex-col">
+                            <x-nav-link 
+                                :href="route('admin.resource.index')" 
+                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-t-lg"
+                            >
+                                + Add Latest Sermon
+                            </x-nav-link>
+
+                            <x-nav-link 
+                                :href="route('admin.resourcefile.file')" 
+                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-b-lg"
+                            >
+                                + Add Good News
+                            </x-nav-link>
+                        </div>
+                    </div>
+                </div>
                 
                 <x-nav-link :href="route('admin.event.index')" :active="request()->routeIs('admin.event.index')">
                     {{ __('Events') }}
@@ -52,7 +91,8 @@
                 <tbody class="divide-y divide-gray-300">
                     @foreach($news as $item)
                         <tr class="divide-x divide-gray-300 hover:bg-gray-50 {{ $loop->even ? 'bg-gray-50' : 'bg-white' }}">
-                            <td class="px-4 py-3 border border-gray-300">{{ $item->id }}</td>
+                            {{-- kosong, nanti diisi nomor urut oleh DataTables --}}
+                            <td class="px-4 py-3 border border-gray-300 text-center"></td>
                             <td class="px-4 py-3 font-medium text-gray-900 whitespace-normal break-words max-w-xs">
                                 {{ $item->title }}
                             </td>
@@ -100,26 +140,26 @@
                                         <label class="block text-sm font-medium">Title</label>
                                         <input type="text" name="title" class="w-full border rounded p-2" value="{{ $item->title }}">
                                         @error('title')
-                                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                         @enderror
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Content</label>
                                         <textarea name="content" class="w-full border rounded p-2" rows="4">{{ $item->content }}</textarea>
                                         @error('content')
-                                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                         @enderror
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">URL Thumbnail</label>
-                                        <input type="text" name="thumbnail_url" class="w-full border rounded p-2" value="{{ $item->thumbnail_url }}">
+                                        <input type="text" name="url" class="w-full border rounded p-2" value="{{ $item->url }}">
+                                        @error('url')
+                                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
                                     </div>
                                     <div class="flex justify-end space-x-2">
                                         <button type="button" onclick="closeModal('editModal-{{ $item->id }}')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
                                         <button type="submit" class="px-4 py-2 bg-yellow-600 text-white rounded-lg">Update</button>
-                                        @error('url')
-                                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                        @enderror
                                     </div>
                                 </form>
                             </div>
@@ -139,28 +179,27 @@
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Title</label>
                     <input type="text" name="title" value="{{ old('title') }}" class="w-full border rounded p-2">
-                     @error('title')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                     @enderror
+                    @error('title')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Content</label>
                     <textarea name="content" class="w-full border rounded p-2" rows="4">{{ old('content') }}</textarea>
                     @error('content')
-                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium">URL Thumbnail</label>
                     <input type="text" name="url" value="{{ old('url') }}" class="w-full border rounded p-2">
-                      @error('url')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                     @enderror
+                    @error('url')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="flex justify-end space-x-2">
                     <button type="button" onclick="closeModal('createModal')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
                     <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Simpan</button>
-                   
                 </div>
             </form>
         </div>
@@ -175,7 +214,7 @@
 
     <script>
         $(document).ready(function () {
-            $('#newsTable').DataTable({
+            let table = $('#newsTable').DataTable({
                 responsive: {
                     breakpoints: [
                         { name: 'desktop', width: Infinity },
@@ -206,8 +245,21 @@
                     infoEmpty: "Tidak ada data tersedia",
                     infoFiltered: "(difilter dari total _MAX_ data)",
                     emptyTable: "Belum ada data news."
-                }
+                },
+                columnDefs: [{
+                    targets: 0, // kolom pertama (ID)
+                    orderable: false,
+                    searchable: false
+                }],
+                order: [[1, 'asc']] // default sort by Title
             });
+
+            // reindex nomor urut
+            table.on('order.dt search.dt draw.dt', function () {
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each((cell, i) => {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
 
             // auto open modal kalau validasi error
             @if($errors->any())
