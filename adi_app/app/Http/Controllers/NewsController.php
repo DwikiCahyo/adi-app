@@ -11,6 +11,8 @@ use Illuminate\Http\JsonResponse;
 use App\Models\News;
 use App\Http\Resources\NewsResource;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+
 
 class NewsController extends Controller {
 
@@ -136,23 +138,44 @@ class NewsController extends Controller {
         return redirect()->route('admin.dashboard')->with('success', 'News berhasil dibuat!');
     }
     
-    public function update(UpdateNewsRequest $request, $id){
+    public function update(UpdateNewsRequest $request, $id)
+    {
         $news = News::findOrFail($id);
 
-        $validatedData = $request->validated();
-        $validatedData['updated_by'] = auth()->id();
+        DB::beginTransaction();
+        try {
+            $validatedData = $request->validated();
+            $validatedData['updated_by'] = auth()->id();
 
-        $oldTitle = $news->title;
-        $news->update($validatedData);
+            $oldData = $news->only(['title', 'url', 'content', 'slug']);
 
-        Log::info("News updated", [
-            'news_id'    => $news->id,
-            'old_title'  => $oldTitle,
-            'new_title'  => $news->title,
-            'updated_by' => auth()->id()
-        ]);
+            $news->fill($validatedData);
 
-        return back()->with('success', 'News berhasil diedit!');
+            // supaya slug tetap konsisten
+            if (!empty($validatedData['title']) && $validatedData['title'] !== $oldData['title']) {
+                $news->slug = $validatedData['title'];
+            }
+
+            $news->save();
+
+            Log::info("News updated", [
+                'news_id'   => $news->id,
+                'old_data'  => $oldData,
+                'new_data'  => $news->only(['title', 'url', 'content', 'slug']),
+                'updated_by'=> auth()->id()
+            ]);
+
+            DB::commit();
+
+            return back()->with('success', 'News berhasil diedit!');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error("News update failed", [
+                'news_id' => $id,
+                'error'   => $e->getMessage(),
+            ]);
+            return back()->withErrors('Terjadi kesalahan saat update news');
+        }
     }
 
     public function destroy($id){
