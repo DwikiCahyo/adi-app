@@ -12,7 +12,7 @@
                         <span>Home</span>
                     </x-nav-link>
 
-                    <x-nav-link :href="route('ministry')" :active="request()->routeIs('ministry')" 
+                    <x-nav-link :href="route('admin.ministry.index')" :active="request()->routeIs('admin.ministry.index')" 
                         class="flex items-center space-x-2 font-medium text-white relative group px-2 py-1">
                         <span>Ministry</span>
                     </x-nav-link>
@@ -77,7 +77,7 @@
             </x-responsive-nav-link>
 
             <!-- Ministry -->
-            <x-responsive-nav-link :href="route('ministry')" :active="request()->routeIs('ministry')">
+            <x-responsive-nav-link :href="route('admin.ministry.index')" :active="request()->routeIs('admin.ministry.index')">
                 <div class="flex items-center space-x-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" 
                         viewBox="0 0 24 24" stroke="currentColor">

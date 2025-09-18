@@ -114,7 +114,7 @@ class ResourceFileController extends Controller
             'title' => 'required|string|max:255',
             'nama_file' => 'required|string|max:255',
             'file_path' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,png,jpeg|max:20480', 
-            'content' => 'nullable|string',
+            'content' => 'required|string',
         ]);
 
         // Simpan file ke storage/app/public/resourcefile
@@ -143,8 +143,8 @@ class ResourceFileController extends Controller
             $validatedData = $request->validate([
                 'title' => 'required|string|max:255',
                 'nama_file' => 'required|string|max:255',
-                'file_path' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,png,jpeg|max:20480',
-                'content' => 'nullable|string',
+                'file_path' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,png,jpeg|max:20480',
+                'content' => 'required|string',
             ]);
 
             $validatedData['updated_by'] = auth()->id();

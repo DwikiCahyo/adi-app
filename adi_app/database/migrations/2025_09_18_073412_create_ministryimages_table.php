@@ -8,9 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('event_images', function (Blueprint $table) {
+        Schema::create('ministryimages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('event_id')->constrained('events')->onDelete('cascade');
+            $table->foreignId('ministry_id')->constrained('ministry')->onDelete('cascade');
             $table->string('image'); 
             $table->timestamps();
         });
@@ -18,6 +18,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('event_images');
+        Schema::dropIfExists('ministryimages');
     }
 };

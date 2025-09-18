@@ -5,6 +5,7 @@ use App\Http\Controllers\NewsController;
 use App\Http\Controllers\EventsController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\ResourceFileController;
+use App\Http\Controllers\MinistryController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -59,6 +60,12 @@ Route::prefix('event')->group(function() {
     Route::get('/events/{event}', [EventsController::class, 'showUser'])->name('events.showUser');
 });
 
+//Ministry
+Route::prefix('ministry')->group(function() {
+    Route::get('/', [MinistryController::class, 'indexUser'])->name('ministry.index');
+    Route::get('/ministry/{ministry}', [MinistryController::class, 'showUser'])->name('ministry.showUser');
+});
+
 //Resource
 Route::prefix('resource')->group(function() {
     Route::get('/', [ResourceController::class, 'index'])->name('resource.index');
@@ -103,6 +110,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/resourcefileAdmin/{resource}', [ResourceFileController::class, 'update'])->name('admin.resourcefile.update');
     Route::delete('/resourcefileAdmin/{resource}', [ResourceFileController::class, 'destroy'])->name('admin.resourcefile.destroy');
 
+    //Halaman Admin Ministry
+    Route::get('/ministryAdmin', [MinistryController::class, 'MinistryAdmin'])->name('admin.ministry.index');
+    // Ministry Admin
+    Route::post('/ministryAdmin', [MinistryController::class, 'store'])->name('admin.ministry.store');
+    Route::put('/ministryAdmin/{ministry}', [MinistryController::class, 'update'])->name('admin.ministry.update');
+    Route::delete('/ministryAdmin/{ministry}', [MinistryController::class, 'destroy'])->name('admin.ministry.destroy');
 
 });
     

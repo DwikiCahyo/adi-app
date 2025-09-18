@@ -5,7 +5,7 @@
         <span class="text-xs">Home</span>
     </a>
 
-    <a href="{{ url('/ministry') }}" 
+    <a href="{{ url('ministry') }}" 
        class="flex flex-col items-center {{ request()->is('ministry') ? 'text-red-500' : 'text-gray-500' }}">
         <img src="{{ asset('images/Ministry_Black.png') }}" alt="Ministry" class="w-6 h-6">
         <span class="text-xs">Ministry</span>
