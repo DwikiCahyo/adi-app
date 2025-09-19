@@ -24,9 +24,9 @@ class EventsController extends Controller
         $request->validate([
             'agenda'            => 'required|string|max:255',
             'title'             => 'required|string|max:255',
-            'topics.*.topic'    => 'required|string|max:255',
+            'topics.*.topic'    => 'nullable|string|max:255',
             'topics.*.content'  => 'required|string',
-            'images.*'          => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'images.*'          => 'nullable|image|mimes:jpg,jpeg,png|max:40048',
         ], [
             'agenda.required' => 'Agenda wajib diisi.',
             'title.required' => 'Judul wajib diisi.',
@@ -74,9 +74,9 @@ class EventsController extends Controller
         $request->validate([
             'agenda'            => 'nullable|string|max:255',
             'title'             => 'required|string|max:255',
-            'topics.*.topic'    => 'required|string|max:255',
+            'topics.*.topic'    => 'nullable|string|max:255',
             'topics.*.content'  => 'required|string',
-            'images.*'          => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
+            'images.*'          => 'nullable|image|mimes:jpg,jpeg,png,gif|max:40048',
         ]);
 
         // Update event utama

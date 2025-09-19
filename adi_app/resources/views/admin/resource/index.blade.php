@@ -7,7 +7,6 @@
                 </x-nav-link>
                 
                 <div x-data="{ open: false }" class="relative">
-                    <!-- Toggle Button -->
                     <button 
                         @click="open = !open" 
                         class="flex items-center px-3 py-2 text-gray-700 hover:text-gray-900 focus:outline-none"
@@ -24,7 +23,6 @@
                         </svg>
                     </button>
 
-                    <!-- Dropdown Menu -->
                     <div 
                         x-show="open" 
                         x-transition
@@ -32,17 +30,10 @@
                         class="absolute left-0 mt-2 w-auto min-w-max bg-white border border-gray-200 rounded-lg shadow-lg z-50"
                     >
                         <div class="flex flex-col">
-                            <x-nav-link 
-                                :href="route('admin.resource.index')" 
-                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-t-lg"
-                            >
+                            <x-nav-link :href="route('admin.resource.index')" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-t-lg">
                                 + Add Latest Sermon
                             </x-nav-link>
-
-                            <x-nav-link 
-                                :href="route('admin.resourcefile.file')" 
-                                class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-b-lg"
-                            >
+                            <x-nav-link :href="route('admin.resourcefile.file')" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-b-lg">
                                 + Add Good News
                             </x-nav-link>
                         </div>
@@ -100,12 +91,7 @@
                             </td>
                             <td class="px-4 py-3 border border-gray-300">
                                 @if($item->thumbnail_url && filter_var($item->thumbnail_url, FILTER_VALIDATE_URL))
-                                    <img 
-                                        src="{{ $item->thumbnail_url }}" 
-                                        alt="{{ $item->title }}" 
-                                        class="w-20 h-14 object-cover rounded border"
-                                        onerror="this.onerror=null;this.src='no-image.png';"
-                                    >
+                                    <img src="{{ $item->thumbnail_url }}" alt="{{ $item->title }}" class="w-20 h-14 object-cover rounded border" onerror="this.onerror=null;this.src='no-image.png';">
                                 @else
                                     <span class="text-gray-400 italic">Gambar tidak tersedia</span>
                                 @endif
@@ -114,16 +100,11 @@
                                 {{ $item->created_at->format('d M Y') }}
                             </td>
                             <td class="px-4 py-3 border border-gray-300 space-x-2">
-                                <button onclick="openModal('editModal-{{ $item->id }}')" 
-                                        class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-sm">
-                                    Edit
-                                </button>
+                                <button onclick="openModal('editModal-{{ $item->id }}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-sm">Edit</button>
                                 <form action="{{ route('admin.resource.destroy', $item->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Yakin mau hapus?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg text-sm">
-                                        Hapus
-                                    </button>
+                                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg text-sm">Hapus</button>
                                 </form>
                             </td>
                         </tr>
@@ -137,15 +118,24 @@
                                     @method('PUT')
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Title</label>
-                                        <input type="text" name="title" class="w-full border rounded p-2" value="{{ $item->title }}">
+                                        <input type="text" name="title" value="{{ old('title', $item->title) }}" class="w-full border rounded p-2 @error('title') border-red-500 @enderror">
+                                        @error('title')
+                                            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                                        @enderror
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Content</label>
-                                        <textarea name="content" class="w-full border rounded p-2" rows="4">{{ $item->content }}</textarea>
+                                        <textarea name="content" rows="4" class="w-full border rounded p-2 @error('content') border-red-500 @enderror">{{ old('content', $item->content) }}</textarea>
+                                        @error('content')
+                                            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                                        @enderror
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">URL Thumbnail</label>
-                                        <input type="text" name="url" class="w-full border rounded p-2" value="{{ $item->url }}">
+                                        <input type="text" name="url" value="{{ old('url', $item->url) }}" class="w-full border rounded p-2 @error('url') border-red-500 @enderror">
+                                        @error('url')
+                                            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                                        @enderror
                                     </div>
                                     <div class="flex justify-end space-x-2">
                                         <button type="button" onclick="closeModal('editModal-{{ $item->id }}')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
@@ -168,15 +158,24 @@
                 @csrf
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Title</label>
-                    <input type="text" name="title" value="{{ old('title') }}" class="w-full border rounded p-2">
+                    <input type="text" name="title" value="{{ old('title') }}" class="w-full border rounded p-2 @error('title') border-red-500 @enderror">
+                    @error('title')
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Content</label>
-                    <textarea name="content" class="w-full border rounded p-2" rows="4">{{ old('content') }}</textarea>
+                    <textarea name="content" rows="4" class="w-full border rounded p-2 @error('content') border-red-500 @enderror">{{ old('content') }}</textarea>
+                    @error('content')
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium">URL Thumbnail</label>
-                    <input type="text" name="url" value="{{ old('url') }}" class="w-full border rounded p-2">
+                    <input type="text" name="url" value="{{ old('url') }}" class="w-full border rounded p-2 @error('url') border-red-500 @enderror">
+                    @error('url')
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="flex justify-end space-x-2">
                     <button type="button" onclick="closeModal('createModal')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
@@ -186,8 +185,7 @@
         </div>
     </div>
 
-    {{-- DataTable --}}
-    {{-- DataTable CSS & JS --}}
+    {{-- DataTables CSS & JS --}}
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.css" />
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -196,72 +194,39 @@
 
     <script>
         $(document).ready(function () {
-        let table = $('#resourceTable').DataTable({
-            responsive: {
-                breakpoints: [
-                    { name: 'desktop', width: Infinity },
-                    { name: 'tablet',  width: 1024 },
-                    { name: 'mobile',  width: 640 }
-                ],
-                details: {
-                    renderer: function ( api, rowIdx, columns ) {
-                        let data = $.map(columns, function (col) {
-                            return col.hidden
-                                ? `<div class="flex flex-col sm:flex-row sm:items-start sm:gap-2 py-2 border-b">
-                                        <span class="font-bold text-gray-800 min-w-[100px]">${col.title} :</span>
-                                        <span class="text-gray-600 break-words">${col.data}</span>
-                                   </div>`
-                                : '';
-                        }).join('');
-                        return data ? $('<div class="p-3"/>').append(data) : false;
-                    }
-                }
-            },
-            pageLength: 10,
-            lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Semua"] ],
-            language: {
-                search: "Cari:",
-                lengthMenu: "Tampilkan _MENU_ data per halaman",
-                zeroRecords: "Tidak ada data",
-                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-                infoEmpty: "Tidak ada data tersedia",
-                infoFiltered: "(difilter dari total _MAX_ data)",
-                emptyTable: "Belum ada data resource."
-            },
-            columnDefs: [{
-                targets: 0, // kolom nomor urut
-                orderable: false,
-                searchable: false
-            }],
-            order: [[1, 'asc']] // urut default: Title
-        });
-    
+            let table = $('#resourceTable').DataTable({
+                responsive: true,
+                pageLength: 10,
+                language: {
+                    search: "Cari:",
+                    lengthMenu: "Tampilkan _MENU_ data per halaman",
+                    zeroRecords: "Tidak ada data",
+                    info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                    infoEmpty: "Tidak ada data tersedia",
+                    infoFiltered: "(difilter dari total _MAX_ data)",
+                    emptyTable: "Belum ada data resource."
+                },
+                columnDefs: [{ targets: 0, orderable: false, searchable: false }],
+                order: [[1, 'asc']]
+            });
+
             table.on('order.dt search.dt draw.dt', function () {
-                table.column(0, { search: 'applied', order: 'applied' }).nodes().each((cell, i) => {
-                    cell.innerHTML = i + 1;
-                });
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each((cell, i) => cell.innerHTML = i + 1);
             }).draw();
-    
+
+            // Auto buka modal jika ada error
             @if($errors->any())
                 openModal('createModal');
             @endif
         });
-    
-        function openModal(id) {
-            document.getElementById(id).classList.remove('hidden');
-        }
-        function closeModal(id) {
-            document.getElementById(id).classList.add('hidden');
-        }
-    
-        // auto hide flash message
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        // Auto-hide flash message
         setTimeout(() => {
             let flash = document.getElementById('flash-message');
-            if (flash) {
-                flash.style.opacity = '0'; 
-                setTimeout(() => flash.remove(), 500); 
-            }
+            if(flash){ flash.style.opacity='0'; setTimeout(()=>flash.remove(),500); }
         }, 3000);
     </script>
-    
 </x-app-layout>
