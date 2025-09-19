@@ -7,7 +7,6 @@
                 </x-nav-link>
                 
                 <div x-data="{ open: false }" class="relative">
-                    <!-- Toggle Button -->
                     <button 
                         @click="open = !open" 
                         class="flex items-center px-3 py-2 text-gray-700 hover:text-gray-900 focus:outline-none"
@@ -24,7 +23,6 @@
                         </svg>
                     </button>
 
-                    <!-- Dropdown Menu -->
                     <div 
                         x-show="open" 
                         x-transition
@@ -55,6 +53,8 @@
             </nav>
         </div> 
     </x-slot>
+    
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.min.css">
     
     <div class="container mx-auto p-6">
         {{-- Flash Message --}}
@@ -97,7 +97,7 @@
                                 {{ $item->title }}
                             </td>
                             <td class="px-4 py-3 text-gray-700 whitespace-normal break-words max-w-md">
-                                {{ Str::limit($item->content, 200) }}
+                                {!! Str::limit($item->content, 200) !!}
                             </td>
                             <td class="px-4 py-3 border border-gray-300">
                                 @if($item->thumbnail_url && filter_var($item->thumbnail_url, FILTER_VALIDATE_URL))
@@ -130,8 +130,8 @@
                         </tr>
 
                         {{-- Modal Edit --}}
-                        <div id="editModal-{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-                            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+                        <div id="editModal-{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 flex flex-col max-h-[90vh] overflow-y-auto">
                                 <h2 class="text-xl font-bold mb-4">Edit News</h2>
                                 <form action="{{ route('admin.dashboard.update', $item->id) }}" method="POST">
                                     @csrf
@@ -139,25 +139,17 @@
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Title</label>
                                         <input type="text" name="title" class="w-full border rounded p-2" value="{{ $item->title }}">
-                                        @error('title')
-                                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                                        @enderror
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Content</label>
-                                        <textarea name="content" class="w-full border rounded p-2" rows="4">{{ $item->content }}</textarea>
-                                        @error('content')
-                                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                                        @enderror
+                                        <input id="trix-edit-{{ $item->id }}" type="hidden" name="content" value="{{ $item->content }}">
+                                        <trix-editor input="trix-edit-{{ $item->id }}" class="trix-content"></trix-editor>
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">URL Thumbnail</label>
                                         <input type="text" name="url" class="w-full border rounded p-2" value="{{ $item->url }}">
-                                        @error('url')
-                                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                                        @enderror
                                     </div>
-                                    <div class="flex justify-end space-x-2">
+                                    <div class="flex justify-end space-x-2 mt-4">
                                         <button type="button" onclick="closeModal('editModal-{{ $item->id }}')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
                                         <button type="submit" class="px-4 py-2 bg-yellow-600 text-white rounded-lg">Update</button>
                                     </div>
@@ -171,8 +163,8 @@
     </div>
 
     {{-- Modal Create --}}
-    <div id="createModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+    <div id="createModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 flex flex-col max-h-[90vh] overflow-y-auto">
             <h2 class="text-xl font-bold mb-4">Tambah News</h2>
             <form action="{{ route('admin.dashboard.store') }}" method="POST">
                 @csrf
@@ -185,7 +177,8 @@
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Content</label>
-                    <textarea name="content" class="w-full border rounded p-2" rows="4">{{ old('content') }}</textarea>
+                    <input id="trix-create" type="hidden" name="content">
+                    <trix-editor input="trix-create" class="trix-content"></trix-editor>
                     @error('content')
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
@@ -197,7 +190,7 @@
                         <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
-                <div class="flex justify-end space-x-2">
+                <div class="flex justify-end space-x-2 mt-4">
                     <button type="button" onclick="closeModal('createModal')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
                     <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Simpan</button>
                 </div>
@@ -211,7 +204,8 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.min.js"></script>
+    
     <script>
         $(document).ready(function () {
             let table = $('#newsTable').DataTable({
@@ -269,6 +263,11 @@
 
         function openModal(id) {
             document.getElementById(id).classList.remove('hidden');
+            // Reset Trix editor saat modal dibuka
+            if (id === 'createModal') {
+                document.getElementById('trix-create').value = '';
+                document.querySelector('#createModal trix-editor').editor.loadHTML('');
+            }
         }
         function closeModal(id) {
             document.getElementById(id).classList.add('hidden');

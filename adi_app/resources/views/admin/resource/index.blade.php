@@ -46,6 +46,8 @@
             </nav>
         </div> 
     </x-slot>
+
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.min.css">
     
     <div class="container mx-auto p-6">
         {{-- Flash Message --}}
@@ -87,7 +89,7 @@
                                 {{ $item->title }}
                             </td>
                             <td class="px-4 py-3 text-gray-700 whitespace-normal break-words max-w-md">
-                                {{ Str::limit($item->content, 200) }}
+                                {!! Str::limit($item->content, 200) !!}
                             </td>
                             <td class="px-4 py-3 border border-gray-300">
                                 @if($item->thumbnail_url && filter_var($item->thumbnail_url, FILTER_VALIDATE_URL))
@@ -110,8 +112,8 @@
                         </tr>
 
                         {{-- Modal Edit --}}
-                        <div id="editModal-{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-                            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+                        <div id="editModal-{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 flex flex-col max-h-[90vh] overflow-y-auto">
                                 <h2 class="text-xl font-bold mb-4">Edit Resource</h2>
                                 <form action="{{ route('admin.resource.update', $item->id) }}" method="POST">
                                     @csrf
@@ -119,25 +121,17 @@
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Title</label>
                                         <input type="text" name="title" value="{{ old('title', $item->title) }}" class="w-full border rounded p-2 @error('title') border-red-500 @enderror">
-                                        @error('title')
-                                            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                                        @enderror
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Content</label>
-                                        <textarea name="content" rows="4" class="w-full border rounded p-2 @error('content') border-red-500 @enderror">{{ old('content', $item->content) }}</textarea>
-                                        @error('content')
-                                            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                                        @enderror
+                                        <input id="trix-edit-{{ $item->id }}" type="hidden" name="content" value="{{ old('content', $item->content) }}">
+                                        <trix-editor input="trix-edit-{{ $item->id }}" class="trix-content"></trix-editor>
                                     </div>
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">URL Thumbnail</label>
                                         <input type="text" name="url" value="{{ old('url', $item->url) }}" class="w-full border rounded p-2 @error('url') border-red-500 @enderror">
-                                        @error('url')
-                                            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                                        @enderror
                                     </div>
-                                    <div class="flex justify-end space-x-2">
+                                    <div class="flex justify-end space-x-2 mt-4">
                                         <button type="button" onclick="closeModal('editModal-{{ $item->id }}')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
                                         <button type="submit" class="px-4 py-2 bg-yellow-600 text-white rounded-lg">Update</button>
                                     </div>
@@ -151,8 +145,8 @@
     </div>
 
     {{-- Modal Create --}}
-    <div id="createModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+    <div id="createModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 flex flex-col max-h-[90vh] overflow-y-auto">
             <h2 class="text-xl font-bold mb-4">Tambah Resource</h2>
             <form action="{{ route('admin.resource.store') }}" method="POST">
                 @csrf
@@ -165,7 +159,8 @@
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Content</label>
-                    <textarea name="content" rows="4" class="w-full border rounded p-2 @error('content') border-red-500 @enderror">{{ old('content') }}</textarea>
+                    <input id="trix-create" type="hidden" name="content">
+                    <trix-editor input="trix-create" class="trix-content"></trix-editor>
                     @error('content')
                         <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                     @enderror
@@ -177,7 +172,7 @@
                         <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>
-                <div class="flex justify-end space-x-2">
+                <div class="flex justify-end space-x-2 mt-4">
                     <button type="button" onclick="closeModal('createModal')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
                     <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Simpan</button>
                 </div>
@@ -191,6 +186,7 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.min.js"></script>
 
     <script>
         $(document).ready(function () {
@@ -204,7 +200,7 @@
                     info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
                     infoEmpty: "Tidak ada data tersedia",
                     infoFiltered: "(difilter dari total _MAX_ data)",
-                    emptyTable: "Belum ada data resource."
+                    emptyTable: "Belum ada data Latest Sermon."
                 },
                 columnDefs: [{ targets: 0, orderable: false, searchable: false }],
                 order: [[1, 'asc']]
@@ -214,16 +210,27 @@
                 table.column(0, { search: 'applied', order: 'applied' }).nodes().each((cell, i) => cell.innerHTML = i + 1);
             }).draw();
 
-            // Auto buka modal jika ada error
             @if($errors->any())
                 openModal('createModal');
             @endif
         });
 
-        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            if (id === 'createModal') {
+                const trixInput = document.getElementById('trix-create');
+                const trixEditor = document.querySelector('#createModal trix-editor');
+                if (trixInput && trixEditor) {
+                    trixInput.value = '';
+                    trixEditor.editor.loadHTML('');
+                }
+            }
+        }
+        
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
 
-        // Auto-hide flash message
         setTimeout(() => {
             let flash = document.getElementById('flash-message');
             if(flash){ flash.style.opacity='0'; setTimeout(()=>flash.remove(),500); }
