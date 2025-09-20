@@ -30,6 +30,8 @@
         </div> 
     </x-slot>
 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.min.css">
+    
     <div class="container mx-auto p-6">
 
         {{-- Flash Message --}}
@@ -66,7 +68,7 @@
                         <tr class="divide-x divide-gray-300 hover:bg-gray-50 {{ $loop->even ? 'bg-gray-50' : 'bg-white' }}">
                             <td class="px-4 py-3 border border-gray-300 text-center"></td>
                             <td class="px-4 py-3 font-medium text-gray-900 max-w-xs break-words">{{ $item->title }}</td>
-                            <td class="px-4 py-3 text-gray-700 max-w-md break-words">{{ Str::limit($item->content, 200) }}</td>
+                            <td class="px-4 py-3 text-gray-700 max-w-md break-words">{!! Str::limit($item->content, 200) !!}</td>
                             <td class="px-4 py-3 text-gray-700 max-w-md break-words">{{ Str::limit($item->nama_file, 200) }}</td>
                             <td class="px-4 py-3 border border-gray-300">
                                 @if($item->file_path)
@@ -87,8 +89,8 @@
                         </tr>
 
                         {{-- Edit Modal --}}
-                        <div id="editModal-{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-                            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+                        <div id="editModal-{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 flex flex-col max-h-[90vh] overflow-y-auto">
                                 <h2 class="text-xl font-bold mb-4">Edit Resource</h2>
                                 <form action="{{ route('admin.resourcefile.update', $item->id) }}" method="POST" enctype="multipart/form-data">
                                     @csrf
@@ -98,21 +100,19 @@
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Title</label>
                                         <input type="text" name="title" class="w-full border rounded p-2 @error('title') border-red-500 @enderror" value="{{ old('title', $item->title) }}">
-                                        @error('title')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                                     </div>
 
-                                    {{-- Content --}}
+                                    {{-- Content (Trix Editor) --}}
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Content</label>
-                                        <textarea name="content" rows="4" class="w-full border rounded p-2 @error('content') border-red-500 @enderror">{{ old('content', $item->content) }}</textarea>
-                                        @error('content')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                                        <input id="trix-edit-{{ $item->id }}" type="hidden" name="content" value="{{ old('content', $item->content) }}">
+                                        <trix-editor input="trix-edit-{{ $item->id }}" class="trix-content"></trix-editor>
                                     </div>
 
                                     {{-- Nama File --}}
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Nama File</label>
                                         <input type="text" name="nama_file" class="w-full border rounded p-2 @error('nama_file') border-red-500 @enderror" value="{{ old('nama_file', $item->nama_file) }}">
-                                        @error('nama_file')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                                     </div>
 
                                     {{-- File Upload --}}
@@ -122,10 +122,9 @@
                                         @if($item->file_path)
                                             <p class="text-xs text-gray-500 mt-1">File lama: <a href="{{ asset('storage/'.$item->file_path) }}" target="_blank" class="text-blue-600 underline">Download</a></p>
                                         @endif
-                                        @error('file_path')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                                     </div>
 
-                                    <div class="flex justify-end space-x-2">
+                                    <div class="flex justify-end space-x-2 mt-4">
                                         <button type="button" onclick="closeModal('editModal-{{ $item->id }}')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
                                         <button type="submit" class="px-4 py-2 bg-yellow-600 text-white rounded-lg">Update</button>
                                     </div>
@@ -139,8 +138,8 @@
     </div>
 
     {{-- Create Modal --}}
-    <div id="createModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+    <div id="createModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 flex flex-col max-h-[90vh] overflow-y-auto">
             <h2 class="text-xl font-bold mb-4">Tambah Resource</h2>
             <form action="{{ route('admin.resourcefile.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
@@ -152,10 +151,11 @@
                     @error('title')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                 </div>
 
-                {{-- Content --}}
+                {{-- Content (Trix Editor) --}}
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Content</label>
-                    <textarea name="content" rows="4" class="w-full border rounded p-2 @error('content') border-red-500 @enderror">{{ old('content') }}</textarea>
+                    <input id="trix-create" type="hidden" name="content">
+                    <trix-editor input="trix-create" class="trix-content"></trix-editor>
                     @error('content')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                 </div>
 
@@ -173,7 +173,7 @@
                     @error('file_path')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                 </div>
 
-                <div class="flex justify-end space-x-2">
+                <div class="flex justify-end space-x-2 mt-4">
                     <button type="button" onclick="closeModal('createModal')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
                     <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Simpan</button>
                 </div>
@@ -187,6 +187,7 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.min.js"></script>
 
     <script>
         $(document).ready(function () {
@@ -201,7 +202,7 @@
                     info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
                     infoEmpty: "Tidak ada data tersedia",
                     infoFiltered: "(difilter dari total _MAX_ data)",
-                    emptyTable: "Belum ada data resource."
+                    emptyTable: "Belum ada data Goods News."
                 },
                 columnDefs: [{ targets: 0, orderable: false, searchable: false }],
                 order: [[1, 'asc']]
@@ -213,11 +214,25 @@
 
             // Auto open modal jika ada error validasi
             @if($errors->any())
-                openModal('createModal');
+                // Cek modal mana yang memiliki error
+                @if($errors->has('title') || $errors->has('content') || $errors->has('nama_file') || $errors->has('file_path'))
+                    openModal('createModal');
+                @endif
             @endif
         });
 
-        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function openModal(id) { 
+            document.getElementById(id).classList.remove('hidden'); 
+            // Reset Trix editor saat modal create dibuka
+            if (id === 'createModal') {
+                const trixInput = document.getElementById('trix-create');
+                const trixEditor = document.querySelector('#createModal trix-editor');
+                if (trixInput && trixEditor) {
+                    trixInput.value = '';
+                    trixEditor.editor.loadHTML('');
+                }
+            }
+        }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
         setTimeout(() => {

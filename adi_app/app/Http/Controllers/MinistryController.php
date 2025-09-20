@@ -112,18 +112,13 @@ class MinistryController extends Controller
         return redirect()->route('admin.ministry.index')->with('success', 'Ministry berhasil dihapus.');
     }
 
-    public function indexUser($category = null)
-    {
-        $query = Ministry::with(['images', 'creator'])
-            ->active();
+    public function indexUser(){
+        $ministry = Ministry::with('images')->active()->get()->map(function($item) {
+            $item->content = nl2br(e($item->content)); // convert enter ke <br>, tetap aman
+            return $item;
+        });
     
-        if ($category && in_array($category, ['Kids', 'Youth Generation', 'General'])) {
-            $query->where('category', $category);
-        }
-    
-        $ministry = $query->get();
-    
-        return view('ministry.index', compact('ministry', 'category'));
+        return view('ministry.index', compact('ministry'));
     }
     
 

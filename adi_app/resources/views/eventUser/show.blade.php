@@ -64,7 +64,7 @@
                 <div>
                     <p class="font-bold text-lg mb-1">{{ $topic->topic }}</p>
                     <p class="text-gray-700 text-justify leading-relaxed tracking-wide">
-                        {!! nl2br(e($topic->content)) !!}
+                        {!! $topic->content !!}
                     </p>
                 </div>
             @endforeach

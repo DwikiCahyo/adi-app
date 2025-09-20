@@ -41,13 +41,13 @@
                             <td class="px-4 py-3 border border-gray-300 text-gray-700">
                                 <div class="content-wrapper">
                                     <div class="content-preview">
-                                        {{ Str::limit($item->content, 100) }}
-                                        @if(strlen($item->content) > 100)
+                                        {!! Str::limit(strip_tags($item->content), 100) !!}
+                                        @if(strlen(strip_tags($item->content)) > 100)
                                             <span class="read-more cursor-pointer text-blue-600 hover:underline ml-1">[Selengkapnya]</span>
                                         @endif
                                     </div>
                                     <div class="content-full hidden">
-                                        {{ $item->content }}
+                                        {!! $item->content !!}
                                         <span class="read-less cursor-pointer text-blue-600 hover:underline ml-1">[Sembunyikan]</span>
                                     </div>
                                 </div>
@@ -77,22 +77,25 @@
                             <td class="px-4 py-3 border border-gray-300 text-gray-700">
                                 {{ $item->created_at->format('d M Y') }}
                             </td>
-                            <td class="px-4 py-3 border border-gray-300 space-x-2">
-                                <button onclick="openModal('editModal-{{ $item->id }}')" 
-                                        class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-sm">
-                                    Edit
-                                </button>
-                                <form action="{{ route('admin.ministry.destroy', $item->id) }}" method="POST" 
-                                      class="inline-block" 
-                                      onsubmit="return confirm('Yakin mau hapus ministry ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" 
-                                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg text-sm">
-                                        Hapus
+                            <td class="px-4 py-3 border border-gray-300 text-gray-700 text-center">
+                                <div class="flex flex-col items-center space-y-2">
+                                    <button onclick="openModal('editModal-{{ $item->id }}')" 
+                                            class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-1 rounded-lg text-sm w-20">
+                                        Edit
                                     </button>
-                                </form>
+                            
+                                    <form action="{{ route('admin.ministry.destroy', $item->id) }}" method="POST" 
+                                          onsubmit="return confirm('Yakin mau hapus ministry ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" 
+                                                class="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-lg text-sm w-20">
+                                            Hapus
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
+                            
                         </tr>
 
                         {{-- Modal Edit --}}
@@ -107,10 +110,14 @@
                                         <input type="text" name="title" value="{{ $item->title }}" 
                                             class="w-full border rounded p-2" required>
                                     </div>
+                                    {{-- EDIT pakai Trix --}}
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Content</label>
-                                        <textarea name="content" rows="4" class="w-full border rounded p-2" required>{{ $item->content }}</textarea>
+                                        <input id="edit-content-{{ $item->id }}" type="hidden" name="content"
+                                            value="{{ old('content', $item->content ?? '') }}">
+                                        <trix-editor input="edit-content-{{ $item->id }}" class="trix-content border rounded"></trix-editor>
                                     </div>
+
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Images</label>
                                         @if($item->images->count() > 0)
@@ -126,8 +133,7 @@
                                     </div>                                    
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium">Category</label>
-                                        <select name="category" 
-                                            class="w-full border rounded p-2">
+                                        <select name="category" class="w-full border rounded p-2">
                                             <option value="">-- Pilih Category --</option>
                                             <option value="Kids" {{ $item->category == 'Kids' ? 'selected' : '' }}>Kids</option>
                                             <option value="Youth Generation" {{ $item->category == 'Youth Generation' ? 'selected' : '' }}>Youth Generation</option>
@@ -161,14 +167,16 @@
                         <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>
+                {{-- CREATE pakai Trix --}}
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Content</label>
-                    <textarea name="content" rows="4"
-                        class="w-full border rounded p-2 @error('content') border-red-500 @enderror" required>{{ old('content') }}</textarea>
+                    <input id="create-content" type="hidden" name="content" value="{{ old('content') }}">
+                    <trix-editor input="create-content" class="trix-content border rounded @error('content') border-red-500 @enderror"></trix-editor>
                     @error('content')
                         <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>
+            
                 <div class="mb-4">
                     <label class="block text-sm font-medium">Image</label>
                     <input type="file" name="images[]" multiple
@@ -213,6 +221,10 @@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 
+    {{-- Tambahkan Trix --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.js"></script>
+
     <script>
         $(document).ready(function () {
             // Inisialisasi DataTables
@@ -235,8 +247,7 @@
                 openModal('createModal');
             @endif
 
-            // Skrip untuk Expand/Collapse Content
-            // Menggunakan .on() untuk event delegation agar berfungsi saat DataTables memuat ulang tabel
+            // Expand/Collapse Content
             $(document).on('click', '.read-more', function() {
                 var wrapper = $(this).closest('.content-wrapper');
                 wrapper.find('.content-preview').addClass('hidden');
@@ -250,15 +261,11 @@
             });
         });
 
-        // Fungsi untuk membuka dan menutup modal
-        function openModal(id) {
-            document.getElementById(id).classList.remove('hidden');
-        }
-        function closeModal(id) {
-            document.getElementById(id).classList.add('hidden');
-        }
+        // Modal
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-        // Image Viewer (Lightbox)
+        // Image Viewer
         function viewImage(src) {
             document.getElementById('viewerImg').src = src;
             document.getElementById('imageViewer').classList.remove('hidden');

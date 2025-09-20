@@ -7,7 +7,6 @@
                 </x-nav-link>
                
                 <div x-data="{ open: false }" class="relative">
-                    <!-- Toggle Button -->
                     <button 
                         @click="open = !open" 
                         class="flex items-center px-3 py-2 text-gray-700 hover:text-gray-900 focus:outline-none"
@@ -24,7 +23,6 @@
                         </svg>
                     </button>
 
-                    <!-- Dropdown Menu -->
                     <div 
                         x-show="open" 
                         x-transition
@@ -56,6 +54,8 @@
         </div> 
     </x-slot>
 
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.min.css">
+    
     <div class="container mx-auto p-6">
         {{-- Flash Message --}}
         @if(session('success'))
@@ -63,17 +63,6 @@
                 {{ session('success') }}
             </div>
         @endif
-
-        {{-- Error Global
-        @if ($errors->any())
-            <div class="mb-4 p-4 text-red-800 bg-red-200 rounded-lg">
-                <ul class="list-disc ps-5">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif --}}
 
         {{-- Header --}}
         <div class="flex justify-between items-center mb-6">
@@ -118,7 +107,7 @@
                                             <div>
                                                 <span class="font-bold text-black">Content:</span>
                                                 <span class="text-gray-700 text-sm leading-relaxed">
-                                                    {{ Str::limit($topic->content, 120) }}
+                                                    {!! Str::limit($topic->content, 120) !!}
                                                 </span>
                                             </div>
                                         </li>
@@ -166,8 +155,8 @@
                         </tr>
 
                         {{-- Modal Edit --}}
-                        <div id="editModal-{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-                            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-screen overflow-y-auto p-6">
+                        <div id="editModal-{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
                                 <h2 class="text-xl font-bold mb-4">Edit Event</h2>
                                 <form action="{{ route('admin.event.update', $item->id) }}" method="POST" enctype="multipart/form-data">
                                     @csrf
@@ -183,11 +172,12 @@
                                             class="w-full border rounded p-2" required>
                                     </div>
                                     <div id="editTopics-{{ $item->id }}" class="mb-4 space-y-4">
-                                        <label class="block text-sm font-medium">Topics</label>
+                                        <label class="block text-sm font-medium">Topics (Optional) & Content</label>
                                         @foreach($item->topics as $tIndex => $topic)
                                             <div class="border p-3 rounded topic-item space-y-2">
-                                                <input type="text" name="topics[{{ $tIndex }}][topic]" value="{{ $topic->topic }}" class="w-full border rounded p-2" placeholder="Judul Topic" required>
-                                                <textarea name="topics[{{ $tIndex }}][content]" rows="3" class="w-full border rounded p-2" placeholder="Isi Konten" required>{{ $topic->content }}</textarea>
+                                                <input type="text" name="topics[{{ $tIndex }}][topic]" value="{{ $topic->topic }}" class="w-full border rounded p-2">
+                                                <input id="trix-edit-{{ $item->id }}-{{ $tIndex }}" type="hidden" placeholder="Isi Content" name="topics[{{ $tIndex }}][content]" value="{{ $topic->content }}">
+                                                <trix-editor input="trix-edit-{{ $item->id }}-{{ $tIndex }}" class="trix-content"></trix-editor>
                                                 <div class="flex justify-end">
                                                     <button type="button" class="remove-topic bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs">Hapus</button>
                                                 </div>
@@ -212,8 +202,8 @@
     </div>
 
     {{-- Modal Create --}}
-    <div id="createModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-screen overflow-y-auto p-6">
+    <div id="createModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
             <h2 class="text-xl font-bold mb-4">Tambah Event</h2>
             <form action="{{ route('admin.event.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
@@ -240,16 +230,17 @@
 
                 {{-- Topics --}}
                 <div id="topics-container" class="mb-4 space-y-4">
-                    <label class="block text-sm font-medium">Topics</label>
+                    <label class="block text-sm font-medium">Topics (Optional) & Content</label>
                     <div class="border p-3 rounded topic-item space-y-2">
                         <input type="text" name="topics[0][topic]" value="{{ old('topics.0.topic') }}"
-                            class="w-full border rounded p-2 @error('topics.0.topic') border-red-500 @enderror" placeholder="Judul Topic">
+                            class="w-full border rounded p-2 @error('topics.0.topic') border-red-500 @enderror">
                         @error('topics.0.topic')
                             <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                         @enderror
 
-                        <textarea name="topics[0][content]" rows="3"
-                                class="w-full border rounded p-2 @error('topics.0.content') border-red-500 @enderror" placeholder="Isi Konten">{{ old('topics.0.content') }}</textarea>
+                        {{-- Trix Editor for Content --}}
+                        <input id="trix-create-0" type="hidden" name="topics[0][content]" placeholder="Isi Content" value="{{ old('topics.0.content') }}">
+                        <trix-editor input="trix-create-0" class="trix-content"></trix-editor>
                         @error('topics.0.content')
                             <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                         @enderror
@@ -297,6 +288,7 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.min.js"></script>
 
     <script>
         $(document).ready(function () {
@@ -334,7 +326,8 @@
             div.classList.add('border', 'p-3', 'rounded', 'topic-item', 'space-y-2');
             div.innerHTML = `
                 <input type="text" name="topics[${tIndex}][topic]" class="w-full border rounded p-2" placeholder="Judul Topic" required>
-                <textarea name="topics[${tIndex}][content]" rows="3" class="w-full border rounded p-2" placeholder="Isi Konten" required></textarea>
+                <input id="trix-create-${tIndex}" type="hidden" name="topics[${tIndex}][content]">
+                <trix-editor input="trix-create-${tIndex}" class="trix-content"></trix-editor>
                 <div class="flex justify-end">
                     <button type="button" class="remove-topic bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs">Hapus</button>
                 </div>

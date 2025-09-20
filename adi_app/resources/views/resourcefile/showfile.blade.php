@@ -35,7 +35,7 @@
         {{-- Konten --}}
         <div class="prose prose-lg max-w-none mb-6">
            <p class="text-gray-700 font-semibold">Reflection:</p>
-            {!! nl2br(e($resourcefile->content)) !!}
+            {!! $resourcefile->content !!}
         </div>
     </div>
 </div>
