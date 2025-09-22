@@ -32,7 +32,7 @@
 
             <div class="space-y-4 text-gray-700">
                 <div class="flex items-center justify-between">
-                    <span>Perpuluhan, Ucapan Syukur, dll</span>
+                    <span>Perpuluhan, <br> Ucapan Syukur</span>
                     <button onclick="copyToClipboard('4878888829')" 
                             class="flex items-center gap-2 text-sm md:text-base border border-gray-300 px-3 py-2 rounded-lg hover:bg-gray-100">
                         487 8888 829

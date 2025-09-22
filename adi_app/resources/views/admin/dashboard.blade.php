@@ -54,8 +54,6 @@
         </div> 
     </x-slot>
     
-    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.min.css">
-    
     <div class="container mx-auto p-6">
         {{-- Flash Message --}}
         @if(session('success'))
@@ -115,7 +113,7 @@
                                 {{ $item->created_at->format('d M Y') }}
                             </td>
                             <td class="px-4 py-3 border border-gray-300 space-x-2">
-                                <button onclick="openModal('editModal-{{ $item->id }}')" 
+                                <button onclick="openEditModal('{{ $item->id }}')" 
                                         class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-sm">
                                     Edit
                                 </button>
@@ -131,23 +129,25 @@
 
                         {{-- Modal Edit --}}
                         <div id="editModal-{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-                            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 flex flex-col max-h-[90vh] overflow-y-auto">
+                            <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 flex flex-col max-h-[90vh] overflow-y-auto">
                                 <h2 class="text-xl font-bold mb-4">Edit News</h2>
-                                <form action="{{ route('admin.dashboard.update', $item->id) }}" method="POST">
+                                <form id="editForm-{{ $item->id }}" action="{{ route('admin.dashboard.update', $item->id) }}" method="POST">
                                     @csrf
                                     @method('PUT')
                                     <div class="mb-4">
-                                        <label class="block text-sm font-medium">Title</label>
-                                        <input type="text" name="title" class="w-full border rounded p-2" value="{{ $item->title }}">
+                                        <label class="block text-sm font-medium mb-2">Title <span class="text-red-500">*</span></label>
+                                        <input type="text" name="title" id="edit-title-{{ $item->id }}" class="w-full border rounded p-2 @error('title') border-red-500 @enderror" value="{{ $item->title }}">
+                                        <div id="edit-title-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
                                     </div>
                                     <div class="mb-4">
-                                        <label class="block text-sm font-medium">Content</label>
-                                        <input id="trix-edit-{{ $item->id }}" type="hidden" name="content" value="{{ $item->content }}">
-                                        <trix-editor input="trix-edit-{{ $item->id }}" class="trix-content"></trix-editor>
+                                        <label class="block text-sm font-medium mb-2">Content <span class="text-red-500">*</span></label>
+                                        <textarea name="content" id="edit-content-{{ $item->id }}" class="ckeditor-edit">{{ $item->content }}</textarea>
+                                        <div id="edit-content-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
                                     </div>
                                     <div class="mb-4">
-                                        <label class="block text-sm font-medium">URL Thumbnail</label>
-                                        <input type="text" name="url" class="w-full border rounded p-2" value="{{ $item->url }}">
+                                        <label class="block text-sm font-medium mb-2">URL Thumbnail <span class="text-red-500">*</span></label>
+                                        <input type="text" name="url" id="edit-url-{{ $item->id }}" class="w-full border rounded p-2 @error('url') border-red-500 @enderror" value="{{ $item->url }}">
+                                        <div id="edit-url-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
                                     </div>
                                     <div class="flex justify-end space-x-2 mt-4">
                                         <button type="button" onclick="closeModal('editModal-{{ $item->id }}')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
@@ -164,31 +164,36 @@
 
     {{-- Modal Create --}}
     <div id="createModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 flex flex-col max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 flex flex-col max-h-[90vh] overflow-y-auto">
             <h2 class="text-xl font-bold mb-4">Tambah News</h2>
-            <form action="{{ route('admin.dashboard.store') }}" method="POST">
+            <form id="createForm" action="{{ route('admin.dashboard.store') }}" method="POST">
                 @csrf
                 <div class="mb-4">
-                    <label class="block text-sm font-medium">Title</label>
-                    <input type="text" name="title" value="{{ old('title') }}" class="w-full border rounded p-2">
-                    @error('title')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
+                    <label class="block text-sm font-medium mb-2">Title <span class="text-red-500">*</span></label>
+                    <input type="text" name="title" id="create-title" value="{{ old('title') }}" class="w-full border rounded p-2 @error('title') border-red-500 @enderror">
+                    <div id="create-title-error" class="text-red-600 text-sm mt-1 hidden">
+                        @error('title')
+                            {{ $message }}
+                        @enderror
+                    </div>
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-medium">Content</label>
-                    <input id="trix-create" type="hidden" name="content">
-                    <trix-editor input="trix-create" class="trix-content"></trix-editor>
-                    @error('content')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
+                    <label class="block text-sm font-medium mb-2">Content <span class="text-red-500">*</span></label>
+                    <textarea name="content" id="create-content" class="ckeditor-create">{{ old('content') }}</textarea>
+                    <div id="create-content-error" class="text-red-600 text-sm mt-1 hidden">
+                        @error('content')
+                            {{ $message }}
+                        @enderror
+                    </div>
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-medium">URL Thumbnail</label>
-                    <input type="text" name="url" value="{{ old('url') }}" class="w-full border rounded p-2">
-                    @error('url')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
+                    <label class="block text-sm font-medium mb-2">URL Thumbnail <span class="text-red-500">*</span></label>
+                    <input type="text" name="url" id="create-url" value="{{ old('url') }}" class="w-full border rounded p-2 @error('url') border-red-500 @enderror">
+                    <div id="create-url-error" class="text-red-600 text-sm mt-1 hidden">
+                        @error('url')
+                            {{ $message }}
+                        @enderror
+                    </div>
                 </div>
                 <div class="flex justify-end space-x-2 mt-4">
                     <button type="button" onclick="closeModal('createModal')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
@@ -201,13 +206,19 @@
     {{-- DataTable CSS & JS --}}
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.css" />
+    
+    {{-- CKEditor CSS & JS --}}
+    <script src="https://cdn.ckeditor.com/ckeditor5/40.1.0/classic/ckeditor.js"></script>
+    
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.min.js"></script>
     
     <script>
+        let createEditor, editEditors = {};
+
         $(document).ready(function () {
+            // Initialize DataTable
             let table = $('#newsTable').DataTable({
                 responsive: {
                     breakpoints: [
@@ -241,39 +252,252 @@
                     emptyTable: "Belum ada data news."
                 },
                 columnDefs: [{
-                    targets: 0, // kolom pertama (ID)
+                    targets: 0,
                     orderable: false,
                     searchable: false
                 }],
-                order: [[1, 'asc']] // default sort by Title
+                order: [[1, 'asc']]
             });
 
-            // reindex nomor urut
+            // Reindex nomor urut
             table.on('order.dt search.dt draw.dt', function () {
                 table.column(0, { search: 'applied', order: 'applied' }).nodes().each((cell, i) => {
                     cell.innerHTML = i + 1;
                 });
             }).draw();
 
-            // auto open modal kalau validasi error
+            // Auto open modal jika ada validation error
             @if($errors->any())
                 openModal('createModal');
             @endif
+
+            // Initialize CKEditor for create modal
+            initializeCreateEditor();
+
+            // Form validation handlers
+            setupFormValidation();
         });
+
+        // Initialize CKEditor for create modal
+        function initializeCreateEditor() {
+            ClassicEditor
+                .create(document.querySelector('#create-content'), {
+                    toolbar: {
+                        items: [
+                            'heading',
+                            '|',
+                            'bold',
+                            'italic',
+                            'link',
+                            'bulletedList',
+                            'numberedList',
+                            '|',
+                            'outdent',
+                            'indent',
+                            '|',
+                            'blockQuote',
+                            'insertTable',
+                            'mediaEmbed',
+                            'undo',
+                            'redo'
+                        ]
+                    },
+                    language: 'id',
+                    table: {
+                        contentToolbar: [
+                            'tableColumn',
+                            'tableRow',
+                            'mergeTableCells'
+                        ]
+                    }
+                })
+                .then(editor => {
+                    createEditor = editor;
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+        }
+
+        // Initialize CKEditor for edit modal
+        function initializeEditEditor(itemId) {
+            if (editEditors[itemId]) {
+                return; // Editor already initialized
+            }
+
+            ClassicEditor
+                .create(document.querySelector(`#edit-content-${itemId}`), {
+                    toolbar: {
+                        items: [
+                            'heading',
+                            '|',
+                            'bold',
+                            'italic',
+                            'link',
+                            'bulletedList',
+                            'numberedList',
+                            '|',
+                            'outdent',
+                            'indent',
+                            '|',
+                            'blockQuote',
+                            'insertTable',
+                            'mediaEmbed',
+                            'undo',
+                            'redo'
+                        ]
+                    },
+                    language: 'id',
+                    table: {
+                        contentToolbar: [
+                            'tableColumn',
+                            'tableRow',
+                            'mergeTableCells'
+                        ]
+                    }
+                })
+                .then(editor => {
+                    editEditors[itemId] = editor;
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+        }
+
+        // Form validation setup
+        function setupFormValidation() {
+            // Create form validation
+            $('#createForm').on('submit', function(e) {
+                let isValid = true;
+                clearErrors('create');
+
+                // Title validation
+                const title = $('#create-title').val().trim();
+                if (!title) {
+                    showError('create-title-error', 'Title harus diisi');
+                    isValid = false;
+                }
+
+                // Content validation
+                const content = createEditor ? createEditor.getData().trim() : '';
+                if (!content || content === '<p>&nbsp;</p>' || content === '<p></p>') {
+                    showError('create-content-error', 'Content harus diisi');
+                    isValid = false;
+                }
+
+                // URL validation (optional but if filled, must be valid URL)
+                const url = $('#create-url').val().trim();
+                if (url && !isValidUrl(url)) {
+                    showError('create-url-error', 'URL thumbnail harus berupa URL yang valid');
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    e.preventDefault();
+                }
+            });
+
+            // Edit form validation
+            $('[id^="editForm-"]').on('submit', function(e) {
+                const itemId = this.id.split('-')[1];
+                let isValid = true;
+                clearErrors('edit', itemId);
+
+                // Title validation
+                const title = $(`#edit-title-${itemId}`).val().trim();
+                if (!title) {
+                    showError(`edit-title-error-${itemId}`, 'Title harus diisi');
+                    isValid = false;
+                }
+
+                // Content validation
+                const content = editEditors[itemId] ? editEditors[itemId].getData().trim() : '';
+                if (!content || content === '<p>&nbsp;</p>' || content === '<p></p>') {
+                    showError(`edit-content-error-${itemId}`, 'Content harus diisi');
+                    isValid = false;
+                }
+
+                // URL validation (optional but if filled, must be valid URL)
+                const url = $(`#edit-url-${itemId}`).val().trim();
+                if (url && !isValidUrl(url)) {
+                    showError(`edit-url-error-${itemId}`, 'URL thumbnail harus berupa URL yang valid');
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    e.preventDefault();
+                }
+            });
+        }
+
+        // Utility functions
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            if (errorElement) {
+                errorElement.textContent = message;
+                errorElement.classList.remove('hidden');
+                
+                // Add red border to input
+                const inputElement = errorElement.previousElementSibling;
+                if (inputElement) {
+                    inputElement.classList.add('border-red-500');
+                }
+            }
+        }
+
+        function clearErrors(type, itemId = '') {
+            const suffix = itemId ? `-${itemId}` : '';
+            const fields = ['title', 'content', 'url'];
+            
+            fields.forEach(field => {
+                const errorId = `${type}-${field}-error${suffix}`;
+                const errorElement = document.getElementById(errorId);
+                if (errorElement) {
+                    errorElement.classList.add('hidden');
+                    errorElement.textContent = '';
+                }
+                
+                // Remove red border
+                const inputId = `${type}-${field}${suffix}`;
+                const inputElement = document.getElementById(inputId);
+                if (inputElement) {
+                    inputElement.classList.remove('border-red-500');
+                }
+            });
+        }
+
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
 
         function openModal(id) {
             document.getElementById(id).classList.remove('hidden');
-            // Reset Trix editor saat modal dibuka
-            if (id === 'createModal') {
-                document.getElementById('trix-create').value = '';
-                document.querySelector('#createModal trix-editor').editor.loadHTML('');
+            clearErrors('create');
+            
+            if (id === 'createModal' && createEditor) {
+                createEditor.setData('');
             }
         }
+
+        function openEditModal(itemId) {
+            const modalId = `editModal-${itemId}`;
+            document.getElementById(modalId).classList.remove('hidden');
+            clearErrors('edit', itemId);
+            
+            // Initialize CKEditor for this edit modal if not already initialized
+            initializeEditEditor(itemId);
+        }
+
         function closeModal(id) {
             document.getElementById(id).classList.add('hidden');
         }
 
-        // auto hide flash message
+        // Auto hide flash message
         setTimeout(() => {
             let flash = document.getElementById('flash-message');
             if (flash) {
@@ -281,5 +505,12 @@
                 setTimeout(() => flash.remove(), 500); 
             }
         }, 3000);
+
+        // Show existing validation errors
+        @if($errors->any())
+            @foreach($errors->all() as $error)
+                console.log('Validation error: {{ $error }}');
+            @endforeach
+        @endif
     </script>
 </x-app-layout>

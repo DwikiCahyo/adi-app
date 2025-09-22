@@ -14,8 +14,9 @@ return new class extends Migration
         Schema::create('resourcefile', function (Blueprint $table) {
             $table->id();
             $table->string('title'); 
-            $table->string('nama_file'); 
-            $table->string('file_path');
+            $table->longText('refleksi_diri'); 
+            $table->longText('pengakuan_iman');
+            $table->longText('bacaan_alkitab');
             $table->longText('content')->nullable(); 
             $table->string('slug', 255)->unique();
             $table->timestamps();

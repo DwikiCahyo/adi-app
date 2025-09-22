@@ -3,6 +3,9 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
+
 
 class UpdateNewsRequest extends FormRequest
 {
@@ -15,8 +18,8 @@ class UpdateNewsRequest extends FormRequest
     {
         return [
             'title'   => ['required','string','max:1500','min:3'],
-            'url'     => ['nullable','string','url','max:500'],
-            'content' => ['nullable','string','max:3000'],
+            'url'     => ['required','string','url','max:500'],
+            'content' => ['required','string','max:3000'],
         ];
     }
 
@@ -43,5 +46,16 @@ class UpdateNewsRequest extends FormRequest
             'content.string' => 'Konten harus berupa teks.',
             'content.max'    => 'Konten maksimal 3000 karakter.',
         ];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        $id = $this->route('id'); // ambil id dari route
+
+        throw new HttpResponseException(
+            back()
+                ->withErrors($validator, 'edit-'.$id) // 👉 error bag khusus edit-{id}
+                ->withInput()
+        );
     }
 }

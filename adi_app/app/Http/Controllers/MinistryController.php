@@ -122,11 +122,10 @@ class MinistryController extends Controller
     }
     
 
-    public function showUser(Ministry $ministry)
-{
-    $ministry->load(['images', 'topics']);
-    return view('ministry.show', compact('ministry'));
-}
+    public function showUser(Ministry $ministry){
+        $ministry->load(['images']);
+        return view('ministry.show', compact('ministry'));
+    }
 
 
 }

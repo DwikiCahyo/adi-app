@@ -3,6 +3,9 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
+
 
 class StoreNewsRequest extends FormRequest
 {
@@ -51,5 +54,14 @@ class StoreNewsRequest extends FormRequest
             'content.string' => 'Kontent harus bertipe text',
             'content.max' => 'Kontent maksimal 3000 karakter',
         ];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            back()
+                ->withErrors($validator, 'create') // 👉 error bag khusus create
+                ->withInput()
+        );
     }
 }
