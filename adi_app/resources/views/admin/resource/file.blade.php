@@ -1,11 +1,11 @@
 <x-app-layout>
-    <x-slot name="header"> 
+    <x-slot name="header">
         <div class="flex items-center sm:-my-px sm:ms-10">
             <nav class="flex gap-4">
                 <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
                     {{ __('News Feed') }}
                 </x-nav-link>
-                
+
                 {{-- Dropdown Resource --}}
                 <div x-data="{ open: false }" class="relative">
                     <button @click="open = !open" class="flex items-center px-3 py-2 text-gray-700 hover:text-gray-900">
@@ -27,11 +27,12 @@
                     {{ __('Events') }}
                 </x-nav-link>
             </nav>
-        </div> 
+        </div>
     </x-slot>
 
-    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.min.css">
-    
+    {{-- CKEditor CSS & JS --}}
+    <script src="https://cdn.ckeditor.com/ckeditor5/40.1.0/classic/ckeditor.js"></script>
+
     <div class="container mx-auto p-6">
 
         {{-- Flash Message --}}
@@ -43,7 +44,7 @@
 
         {{-- Header --}}
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold">Good News</h1>
+            <h1 class="text-2xl font-bold">📄 Good News</h1>
             <button onclick="openModal('createModal')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow">
                 + Tambah Resource
             </button>
@@ -56,9 +57,10 @@
                     <tr class="divide-x divide-gray-300">
                         <th class="px-4 py-3 border border-gray-300 rounded-tl-lg">ID</th>
                         <th class="px-4 py-3 border border-gray-300">Title</th>
+                        <th class="px-4 py-3 border border-gray-300">Refleksi Diri</th>
+                        <th class="px-4 py-3 border border-gray-300">Pengakuan Iman</th>
+                        <th class="px-4 py-3 border border-gray-300">Bacaan Alkitab</th>
                         <th class="px-4 py-3 border border-gray-300">Content</th>
-                        <th class="px-4 py-3 border border-gray-300">Nama File</th>
-                        <th class="px-4 py-3 border border-gray-300">File</th>
                         <th class="px-4 py-3 border border-gray-300">Created At</th>
                         <th class="px-4 py-3 border border-gray-300 rounded-tr-lg">Aksi</th>
                     </tr>
@@ -68,18 +70,13 @@
                         <tr class="divide-x divide-gray-300 hover:bg-gray-50 {{ $loop->even ? 'bg-gray-50' : 'bg-white' }}">
                             <td class="px-4 py-3 border border-gray-300 text-center"></td>
                             <td class="px-4 py-3 font-medium text-gray-900 max-w-xs break-words">{{ $item->title }}</td>
-                            <td class="px-4 py-3 text-gray-700 max-w-md break-words">{!! Str::limit($item->content, 200) !!}</td>
-                            <td class="px-4 py-3 text-gray-700 max-w-md break-words">{{ Str::limit($item->nama_file, 200) }}</td>
-                            <td class="px-4 py-3 border border-gray-300">
-                                @if($item->file_path)
-                                    <a href="{{ asset('storage/'.$item->file_path) }}" target="_blank" class="text-blue-600 underline">Download</a>
-                                @else
-                                    <span class="text-gray-400 italic">Tidak ada file</span>
-                                @endif
-                            </td>
+                            <td class="px-4 py-3 text-gray-700 max-w-md break-words">{!! Str::limit($item->refleksi_diri, 100) !!}</td>
+                            <td class="px-4 py-3 text-gray-700 max-w-md break-words">{!! Str::limit($item->pengakuan_iman, 100) !!}</td>
+                            <td class="px-4 py-3 text-gray-700 max-w-md break-words">{!! Str::limit($item->bacaan_alkitab, 100) !!}</td>
+                            <td class="px-4 py-3 text-gray-700 max-w-md break-words">{!! Str::limit($item->content, 100) !!}</td>
                             <td class="px-4 py-3 border border-gray-300 text-gray-600">{{ $item->created_at->format('d M Y') }}</td>
                             <td class="px-4 py-3 border border-gray-300 space-x-2">
-                                <button onclick="openModal('editModal-{{ $item->id }}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-sm">Edit</button>
+                                <button onclick="openEditModal('{{ $item->id }}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-sm">Edit</button>
                                 <form action="{{ route('admin.resourcefile.destroy', $item->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Yakin mau hapus?')">
                                     @csrf
                                     @method('DELETE')
@@ -90,38 +87,45 @@
 
                         {{-- Edit Modal --}}
                         <div id="editModal-{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-                            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 flex flex-col max-h-[90vh] overflow-y-auto">
+                            <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 flex flex-col max-h-[90vh] overflow-y-auto">
                                 <h2 class="text-xl font-bold mb-4">Edit Resource</h2>
-                                <form action="{{ route('admin.resourcefile.update', $item->id) }}" method="POST" enctype="multipart/form-data">
+                                <form id="edit-form-{{ $item->id }}" class="edit-form" action="{{ route('admin.resourcefile.update', $item->id) }}" method="POST">
                                     @csrf
                                     @method('PUT')
 
                                     {{-- Title --}}
                                     <div class="mb-4">
-                                        <label class="block text-sm font-medium">Title</label>
-                                        <input type="text" name="title" class="w-full border rounded p-2 @error('title') border-red-500 @enderror" value="{{ old('title', $item->title) }}">
+                                        <label class="block text-sm font-medium mb-2">Title <span class="text-red-500">*</span></label>
+                                        <input type="text" name="title" id="edit-title-{{ $item->id }}" class="w-full border rounded p-2" value="{{ old('title', $item->title) }}">
+                                        <div id="edit-title-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
                                     </div>
 
-                                    {{-- Content (Trix Editor) --}}
+                                    {{-- Content --}}
                                     <div class="mb-4">
-                                        <label class="block text-sm font-medium">Content</label>
-                                        <input id="trix-edit-{{ $item->id }}" type="hidden" name="content" value="{{ old('content', $item->content) }}">
-                                        <trix-editor input="trix-edit-{{ $item->id }}" class="trix-content"></trix-editor>
+                                        <label class="block text-sm font-medium mb-2">Content <span class="text-red-500">*</span></label>
+                                        <textarea id="edit-content-{{ $item->id }}" name="content" class="ckeditor-edit" data-field="content">{!! old('content', $item->content) !!}</textarea>
+                                        <div id="edit-content-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
                                     </div>
 
-                                    {{-- Nama File --}}
+                                    {{-- Refleksi Diri --}}
                                     <div class="mb-4">
-                                        <label class="block text-sm font-medium">Nama File</label>
-                                        <input type="text" name="nama_file" class="w-full border rounded p-2 @error('nama_file') border-red-500 @enderror" value="{{ old('nama_file', $item->nama_file) }}">
+                                        <label class="block text-sm font-medium mb-2">Refleksi Diri <span class="text-red-500">*</span></label>
+                                        <textarea id="edit-refleksi_diri-{{ $item->id }}" name="refleksi_diri" class="ckeditor-edit" data-field="refleksi_diri">{!! old('refleksi_diri', $item->refleksi_diri) !!}</textarea>
+                                        <div id="edit-refleksi_diri-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
                                     </div>
 
-                                    {{-- File Upload --}}
+                                    {{-- Pengakuan Iman --}}
                                     <div class="mb-4">
-                                        <label class="block text-sm font-medium">Upload File Baru (opsional)</label>
-                                        <input type="file" name="file_path" class="w-full border rounded p-2 @error('file_path') border-red-500 @enderror">
-                                        @if($item->file_path)
-                                            <p class="text-xs text-gray-500 mt-1">File lama: <a href="{{ asset('storage/'.$item->file_path) }}" target="_blank" class="text-blue-600 underline">Download</a></p>
-                                        @endif
+                                        <label class="block text-sm font-medium mb-2">Pengakuan Iman <span class="text-red-500">*</span></label>
+                                        <textarea id="edit-pengakuan_iman-{{ $item->id }}" name="pengakuan_iman" class="ckeditor-edit" data-field="pengakuan_iman">{!! old('pengakuan_iman', $item->pengakuan_iman) !!}</textarea>
+                                        <div id="edit-pengakuan_iman-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
+                                    </div>
+
+                                    {{-- Bacaan Alkitab --}}
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium mb-2">Bacaan Alkitab <span class="text-red-500">*</span></label>
+                                        <textarea id="edit-bacaan_alkitab-{{ $item->id }}" name="bacaan_alkitab" class="ckeditor-edit" data-field="bacaan_alkitab">{!! old('bacaan_alkitab', $item->bacaan_alkitab) !!}</textarea>
+                                        <div id="edit-bacaan_alkitab-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
                                     </div>
 
                                     <div class="flex justify-end space-x-2 mt-4">
@@ -139,38 +143,64 @@
 
     {{-- Create Modal --}}
     <div id="createModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 flex flex-col max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 flex flex-col max-h-[90vh] overflow-y-auto">
             <h2 class="text-xl font-bold mb-4">Tambah Resource</h2>
-            <form action="{{ route('admin.resourcefile.store') }}" method="POST" enctype="multipart/form-data">
+            <form id="create-form" action="{{ route('admin.resourcefile.store') }}" method="POST">
                 @csrf
 
                 {{-- Title --}}
                 <div class="mb-4">
-                    <label class="block text-sm font-medium">Title</label>
-                    <input type="text" name="title" value="{{ old('title') }}" class="w-full border rounded p-2 @error('title') border-red-500 @enderror">
-                    @error('title')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                    <label class="block text-sm font-medium mb-2">Title <span class="text-red-500">*</span></label>
+                    <input type="text" name="title" id="create-title" value="{{ old('title') }}" class="w-full border rounded p-2">
+                    <div id="create-title-error" class="text-red-600 text-sm mt-1 hidden">
+                        @error('title')
+                            {{ $message }}
+                        @enderror
+                    </div>
                 </div>
 
-                {{-- Content (Trix Editor) --}}
+                {{-- Content --}}
                 <div class="mb-4">
-                    <label class="block text-sm font-medium">Content</label>
-                    <input id="trix-create" type="hidden" name="content">
-                    <trix-editor input="trix-create" class="trix-content"></trix-editor>
-                    @error('content')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                    <label class="block text-sm font-medium mb-2">Content <span class="text-red-500">*</span></label>
+                    <textarea id="create-content" name="content" class="ckeditor-create">{{ old('content') }}</textarea>
+                    <div id="create-content-error" class="text-red-600 text-sm mt-1 hidden">
+                        @error('content')
+                            {{ $message }}
+                        @enderror
+                    </div>
                 </div>
 
-                {{-- Nama File --}}
+                {{-- Refleksi Diri --}}
                 <div class="mb-4">
-                    <label class="block text-sm font-medium">Nama File</label>
-                    <input type="text" name="nama_file" value="{{ old('nama_file') }}" class="w-full border rounded p-2 @error('nama_file') border-red-500 @enderror">
-                    @error('nama_file')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                    <label class="block text-sm font-medium mb-2">Refleksi Diri <span class="text-red-500">*</span></label>
+                    <textarea id="create-refleksi_diri" name="refleksi_diri" class="ckeditor-create">{{ old('refleksi_diri') }}</textarea>
+                    <div id="create-refleksi_diri-error" class="text-red-600 text-sm mt-1 hidden">
+                        @error('refleksi_diri')
+                            {{ $message }}
+                        @enderror
+                    </div>
                 </div>
 
-                {{-- File Upload --}}
+                {{-- Pengakuan Iman --}}
                 <div class="mb-4">
-                    <label class="block text-sm font-medium">Upload File (opsional)</label>
-                    <input type="file" name="file_path" class="w-full border rounded p-2 @error('file_path') border-red-500 @enderror">
-                    @error('file_path')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                    <label class="block text-sm font-medium mb-2">Pengakuan Iman <span class="text-red-500">*</span></label>
+                    <textarea id="create-pengakuan_iman" name="pengakuan_iman" class="ckeditor-create">{{ old('pengakuan_iman') }}</textarea>
+                    <div id="create-pengakuan_iman-error" class="text-red-600 text-sm mt-1 hidden">
+                        @error('pengakuan_iman')
+                            {{ $message }}
+                        @enderror
+                    </div>
+                </div>
+
+                {{-- Bacaan Alkitab --}}
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Bacaan Alkitab <span class="text-red-500">*</span></label>
+                    <textarea id="create-bacaan_alkitab" name="bacaan_alkitab" class="ckeditor-create">{{ old('bacaan_alkitab') }}</textarea>
+                    <div id="create-bacaan_alkitab-error" class="text-red-600 text-sm mt-1 hidden">
+                        @error('bacaan_alkitab')
+                            {{ $message }}
+                        @enderror
+                    </div>
                 </div>
 
                 <div class="flex justify-end space-x-2 mt-4">
@@ -181,18 +211,39 @@
         </div>
     </div>
 
-    {{-- DataTables JS --}}
+    {{-- DataTables CSS & JS --}}
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.css" />
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.min.js"></script>
 
     <script>
+        let createEditors = {}, editEditors = {};
+
         $(document).ready(function () {
+            // Initialize DataTable
             let table = $('#resourceTable').DataTable({
-                responsive: true,
+                responsive: {
+                    breakpoints: [
+                        { name: 'desktop', width: Infinity },
+                        { name: 'tablet',  width: 1024 },
+                        { name: 'mobile',  width: 640 }
+                    ],
+                    details: {
+                        renderer: function ( api, rowIdx, columns ) {
+                            let data = $.map(columns, function (col) {
+                                return col.hidden
+                                    ? `<div class="flex flex-col sm:flex-row sm:items-start sm:gap-2 py-2 border-b">
+                                            <span class="font-bold text-gray-800 min-w-[100px]">${col.title} :</span>
+                                            <span class="text-gray-600 break-words">${col.data}</span>
+                                       </div>`
+                                    : '';
+                            }).join('');
+                            return data ? $('<div class="p-3"/>').append(data) : false;
+                        }
+                    }
+                },
                 pageLength: 10,
                 lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Semua"] ],
                 language: {
@@ -202,42 +253,302 @@
                     info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
                     infoEmpty: "Tidak ada data tersedia",
                     infoFiltered: "(difilter dari total _MAX_ data)",
-                    emptyTable: "Belum ada data Goods News."
+                    emptyTable: "Belum ada data Good News."
                 },
                 columnDefs: [{ targets: 0, orderable: false, searchable: false }],
                 order: [[1, 'asc']]
             });
 
+            // Reindex nomor urut
             table.on('order.dt search.dt draw.dt', function () {
-                table.column(0, { search: 'applied', order: 'applied' }).nodes().each((cell, i) => { cell.innerHTML = i + 1; });
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each((cell, i) => { 
+                    cell.innerHTML = i + 1; 
+                });
             }).draw();
 
-            // Auto open modal jika ada error validasi
+            // Auto open modal jika ada validation error
             @if($errors->any())
-                // Cek modal mana yang memiliki error
-                @if($errors->has('title') || $errors->has('content') || $errors->has('nama_file') || $errors->has('file_path'))
-                    openModal('createModal');
-                @endif
+                openModal('createModal');
             @endif
+
+            // Initialize CKEditor for create modal
+            initializeCreateEditors();
+
+            // Setup form validation
+            setupFormValidation();
         });
 
-        function openModal(id) { 
-            document.getElementById(id).classList.remove('hidden'); 
-            // Reset Trix editor saat modal create dibuka
-            if (id === 'createModal') {
-                const trixInput = document.getElementById('trix-create');
-                const trixEditor = document.querySelector('#createModal trix-editor');
-                if (trixInput && trixEditor) {
-                    trixInput.value = '';
-                    trixEditor.editor.loadHTML('');
+        // Initialize CKEditor for create modal
+        function initializeCreateEditors() {
+            const createFields = ['refleksi_diri', 'pengakuan_iman', 'bacaan_alkitab', 'content'];
+            
+            createFields.forEach(field => {
+                const elementId = `create-${field}`;
+                const element = document.querySelector(`#${elementId}`);
+                
+                if (element) {
+                    ClassicEditor
+                        .create(element, getEditorConfig())
+                        .then(editor => {
+                            createEditors[field] = editor;
+                        })
+                        .catch(error => {
+                            console.error(`CKEditor initialization failed for ${elementId}:`, error);
+                        });
+                }
+            });
+        }
+
+        // Initialize CKEditor for edit modal
+        function initializeEditEditors(itemId) {
+            if (editEditors[itemId]) {
+                return; // Already initialized
+            }
+
+            editEditors[itemId] = {};
+            const editFields = ['refleksi_diri', 'pengakuan_iman', 'bacaan_alkitab', 'content'];
+            
+            editFields.forEach(field => {
+                const elementId = `edit-${field}-${itemId}`;
+                const element = document.querySelector(`#${elementId}`);
+                
+                if (element) {
+                    ClassicEditor
+                        .create(element, getEditorConfig())
+                        .then(editor => {
+                            editEditors[itemId][field] = editor;
+                        })
+                        .catch(error => {
+                            console.error(`CKEditor initialization failed for ${elementId}:`, error);
+                        });
+                }
+            });
+        }
+
+        // CKEditor configuration
+        function getEditorConfig() {
+            return {
+                toolbar: {
+                    items: [
+                        'heading',
+                        '|',
+                        'bold',
+                        'italic',
+                        'link',
+                        'bulletedList',
+                        'numberedList',
+                        '|',
+                        'outdent',
+                        'indent',
+                        '|',
+                        'blockQuote',
+                        'insertTable',
+                        'undo',
+                        'redo'
+                    ]
+                },
+                language: 'id',
+                table: {
+                    contentToolbar: [
+                        'tableColumn',
+                        'tableRow',
+                        'mergeTableCells'
+                    ]
+                }
+            };
+        }
+
+        // Form validation setup
+        function setupFormValidation() {
+            // Create form validation
+            $('#create-form').on('submit', function(e) {
+                let isValid = true;
+                clearErrors('create');
+
+                // Title validation
+                const title = $('#create-title').val().trim();
+                if (!title) {
+                    showError('create-title-error', 'Title harus diisi');
+                    isValid = false;
+                } else if (title.length < 3) {
+                    showError('create-title-error', 'Title minimal 3 karakter');
+                    isValid = false;
+                } else if (title.length > 255) {
+                    showError('create-title-error', 'Title maksimal 255 karakter');
+                    isValid = false;
+                }
+
+                // Required fields validation
+                const requiredFields = ['refleksi_diri', 'pengakuan_iman', 'bacaan_alkitab', 'content'];
+                requiredFields.forEach(field => {
+                    const content = createEditors[field] ? createEditors[field].getData().trim() : '';
+                    if (!content || content === '<p>&nbsp;</p>' || content === '<p></p>') {
+                        const fieldName = field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        showError(`create-${field}-error`, `${fieldName} harus diisi`);
+                        isValid = false;
+                    } else if (content.length < 10) {
+                        const fieldName = field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        showError(`create-${field}-error`, `${fieldName} minimal 10 karakter`);
+                        isValid = false;
+                    }
+                });
+
+                if (!isValid) {
+                    e.preventDefault();
+                }
+            });
+
+            // Edit form validation
+            $('[id^="edit-form-"]').on('submit', function(e) {
+                const itemId = this.id.split('-')[2];
+                let isValid = true;
+                clearErrors('edit', itemId);
+
+                // Title validation
+                const title = $(`#edit-title-${itemId}`).val().trim();
+                if (!title) {
+                    showError(`edit-title-error-${itemId}`, 'Title harus diisi');
+                    isValid = false;
+                } else if (title.length < 3) {
+                    showError(`edit-title-error-${itemId}`, 'Title minimal 3 karakter');
+                    isValid = false;
+                } else if (title.length > 255) {
+                    showError(`edit-title-error-${itemId}`, 'Title maksimal 255 karakter');
+                    isValid = false;
+                }
+
+                // Required fields validation
+                const requiredFields = ['refleksi_diri', 'pengakuan_iman', 'bacaan_alkitab', 'content'];
+                requiredFields.forEach(field => {
+                    const content = editEditors[itemId] && editEditors[itemId][field] 
+                        ? editEditors[itemId][field].getData().trim() 
+                        : '';
+                    if (!content || content === '<p>&nbsp;</p>' || content === '<p></p>') {
+                        const fieldName = field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        showError(`edit-${field}-error-${itemId}`, `${fieldName} harus diisi`);
+                        isValid = false;
+                    } else if (content.length < 10) {
+                        const fieldName = field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        showError(`edit-${field}-error-${itemId}`, `${fieldName} minimal 10 karakter`);
+                        isValid = false;
+                    }
+                });
+
+                if (!isValid) {
+                    e.preventDefault();
+                }
+            });
+        }
+
+        // Utility functions
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            if (errorElement) {
+                errorElement.textContent = message;
+                errorElement.classList.remove('hidden');
+                
+                // Add red border to input
+                const inputId = elementId.replace('-error', '');
+                const inputElement = document.getElementById(inputId);
+                if (inputElement) {
+                    inputElement.classList.add('border-red-500');
                 }
             }
         }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
+        function clearErrors(type, itemId = '') {
+            const suffix = itemId ? `-${itemId}` : '';
+            const fields = ['title', 'refleksi_diri', 'pengakuan_iman', 'bacaan_alkitab', 'content'];
+            
+            fields.forEach(field => {
+                const errorId = `${type}-${field}-error${suffix}`;
+                const errorElement = document.getElementById(errorId);
+                if (errorElement) {
+                    errorElement.classList.add('hidden');
+                    errorElement.textContent = '';
+                }
+                
+                // Remove red border
+                const inputId = `${type}-${field}${suffix}`;
+                const inputElement = document.getElementById(inputId);
+                if (inputElement) {
+                    inputElement.classList.remove('border-red-500');
+                }
+            });
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            clearErrors('create');
+            
+            if (id === 'createModal') {
+                // Reset form
+                document.getElementById('create-form').reset();
+                // Clear CKEditor content
+                Object.keys(createEditors).forEach(field => {
+                    if (createEditors[field]) {
+                        createEditors[field].setData('');
+                    }
+                });
+            }
+        }
+
+        function openEditModal(itemId) {
+            const modalId = `editModal-${itemId}`;
+            document.getElementById(modalId).classList.remove('hidden');
+            clearErrors('edit', itemId);
+            
+            // Initialize CKEditor for this edit modal if not already initialized
+            initializeEditEditors(itemId);
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+            
+            if (id === 'createModal') {
+                clearErrors('create');
+            } else if (id.startsWith('editModal-')) {
+                const itemId = id.split('-')[1];
+                clearErrors('edit', itemId);
+            }
+        }
+
+        // Auto hide flash message
         setTimeout(() => {
             let flash = document.getElementById('flash-message');
-            if (flash) { flash.style.opacity = '0'; setTimeout(() => flash.remove(), 500); }
+            if (flash) {
+                flash.style.opacity = '0'; 
+                setTimeout(() => flash.remove(), 500); 
+            }
         }, 3000);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                // Close any open modals
+                const modals = ['createModal'];
+                modals.forEach(modalId => {
+                    const modal = document.getElementById(modalId);
+                    if (modal && !modal.classList.contains('hidden')) {
+                        closeModal(modalId);
+                    }
+                });
+                
+                // Close edit modals
+                const editModals = document.querySelectorAll('[id^="editModal-"]');
+                editModals.forEach(modal => {
+                    if (!modal.classList.contains('hidden')) {
+                        closeModal(modal.id);
+                    }
+                });
+            }
+        });
+
+        // Show existing validation errors on page load
+        @if($errors->any())
+            @foreach($errors->all() as $error)
+                console.log('Validation error: {{ $error }}');
+            @endforeach
+        @endif
     </script>
 </x-app-layout>

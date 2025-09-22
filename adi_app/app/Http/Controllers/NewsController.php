@@ -183,5 +183,4 @@ class NewsController extends Controller {
         $news->delete();
         return back()->with('success', 'News berhasil didelete!');
     }
-
 }

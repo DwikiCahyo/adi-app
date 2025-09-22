@@ -4,7 +4,7 @@
 <div class="w-full min-h-screen"
      x-data="{
         category: 'Kids',
-        ministries: {{ $ministry->toJson() }},
+        ministry: @js($ministry),
         cleanContent(html) {
             if (!html) return '';
 
@@ -29,6 +29,21 @@
             });
 
             return output;
+        },
+        truncateContent(html, maxWords = 50) {
+            if (!html) return '';
+            
+            // Strip HTML tags untuk counting words
+            let tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            let text = tempDiv.textContent || tempDiv.innerText || '';
+            
+            let words = text.trim().split(/\s+/);
+            if (words.length <= maxWords) return this.cleanContent(html);
+            
+            // Jika terlalu panjang, potong dan tambah ellipsis
+            let truncated = words.slice(0, maxWords).join(' ') + '...';
+            return `<p>${truncated}</p>`;
         }
      }">
 
@@ -64,11 +79,11 @@
 
     {{-- Content --}}
     <div id="ministry-content" class="max-w-2xl mx-auto space-y-8 pb-32">
-        <template x-for="item in ministries.filter(m => m.category === category)" :key="item.id">
+        <template x-for="item in ministry.filter(m => m.category === category)" :key="item.id">
             <div class="bg-white shadow-sm rounded-lg overflow-hidden">
 
                 {{-- Gambar + Carousel --}}
-                <template x-if="item.images.length > 0">
+                <template x-if="item.images && item.images.length > 0">
                     <div class="relative w-full bg-white"
                          x-data="{ active: 0, startX: 0, endX: 0 }"
                          @touchstart="startX = $event.touches[0].clientX"
@@ -121,16 +136,18 @@
                 <div class="p-4">
                     <h2 class="text-xl font-bold text-gray-800 mb-2" x-text="item.title"></h2>
 
-                    <div class="prose max-w-none text-gray-700 leading-relaxed"
-                         x-html="cleanContent(item.content)">
-                    </div>
+                    {{-- Link dinamis berdasarkan slug dari Alpine.js --}}
+                    <a :href="'/ministry/' + item.slug" 
+                        class="mt-auto text-red-600 font-bold hover:underline">
+                        FIND OUT MORE
+                    </a>
                 </div>
             </div>
         </template>
 
         {{-- Kalau kosong --}}
         <div class="text-center text-gray-500 text-lg py-10" 
-             x-show="ministries.filter(m => m.category === category).length === 0">
+             x-show="ministry.filter(m => m.category === category).length === 0">
             Belum ada ministry untuk kategori ini.
         </div>
     </div>

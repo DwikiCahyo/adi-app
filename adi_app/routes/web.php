@@ -63,7 +63,7 @@ Route::prefix('event')->group(function() {
 //Ministry
 Route::prefix('ministry')->group(function() {
     Route::get('/', [MinistryController::class, 'indexUser'])->name('ministry.index');
-    Route::get('/ministry/{ministry}', [MinistryController::class, 'showUser'])->name('ministry.showUser');
+    Route::get('/{ministry:slug}', [MinistryController::class, 'showUser'])->name('ministry.showUser');
 });
 
 //Resource

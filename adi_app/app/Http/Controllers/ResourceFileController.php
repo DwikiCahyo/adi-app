@@ -16,17 +16,12 @@ use Illuminate\Support\Facades\Storage;
 
 class ResourceFileController extends Controller
 {
-    public function index(Request $request): View|JsonResponse{
+    public function index(Request $request): View|JsonResponse
+    {
         $resourceFiles = ResourceFile::with(['creator', 'updater'])
                     ->active()
                     ->recent()
-                    ->get()
-                    ->map(function ($item) {
-                        $item->file_url = $item->file_path
-                            ? asset('storage/' . $item->file_path)
-                            : null;
-                        return $item;
-                    });
+                    ->get();
 
         Log::info("ResourceFile index request", [
             'total_resourcefile' => $resourceFiles->count(),
@@ -38,7 +33,7 @@ class ResourceFileController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'data'    => $resourceFiles, // kalau ada ResourceFileResource, pakai itu
+                'data'    => $resourceFiles,
                 'total'   => $resourceFiles->count(),
                 'message' => 'Data Resource File berhasil ditampilkan'
             ]);
@@ -47,7 +42,8 @@ class ResourceFileController extends Controller
         return view('resource.file', compact('resourceFiles'));
     }
 
-    public function show(Request $request, ResourceFile $resourceFile){
+    public function show(Request $request, ResourceFile $resourceFile)
+    {
         $resourceFile->load(['creator', 'updater']);
 
         Log::info("ResourceFile show request", [
@@ -59,12 +55,7 @@ class ResourceFileController extends Controller
             'user_agent' => $request->userAgent()
         ]);
 
-        // buat URL file kalau ada path
-        $resourceFile->file_url = $resourceFile->file_path
-            ? asset('storage/' . $resourceFile->file_path)
-            : null;
-
-        // 🔹 Ambil semua data untuk archive (kecuali current)
+        // Ambil semua data untuk archive (kecuali current)
         $archives = ResourceFile::orderBy('created_at', 'desc')
             ->where('id', '!=', $resourceFile->id)
             ->get();
@@ -80,28 +71,14 @@ class ResourceFileController extends Controller
         return view('resourcefile.show', compact('resourceFile', 'archives'));
     }
 
-    public function showfile($id){
+    public function showfile($id)
+    {
         $resourcefile = ResourceFile::findOrFail($id);
         return view('resourcefile.showfile', compact('resourcefile'));
     }
 
-
-    public function download($id){
-        $resourcefile = ResourceFile::findOrFail($id);
-
-        if ($resourcefile->file_path && Storage::disk('public')->exists($resourcefile->file_path)) {
-            // Nama file asli (kalau ada di DB, fallback ke basename path)
-            $filename = $resourcefile->nama_file ?? basename($resourcefile->file_path);
-
-            return Storage::disk('public')->download($resourcefile->file_path, $filename);
-        }
-
-        return back()->with('error', 'File tidak ditemukan.');
-    }
-
-
-
-    public function ResourceFileAdmin(){
+    public function ResourceFileAdmin()
+    {
         $resourcefile = ResourceFile::with(['creator', 'updater'])
             ->active()
             ->get();
@@ -109,18 +86,16 @@ class ResourceFileController extends Controller
         return view('admin.resource.file', compact('resourcefile'));
     }
 
-    public function store(Request $request){
+    public function store(Request $request)
+    {
         $validatedData = $request->validate([
             'title' => 'required|string|max:255',
-            'nama_file' => 'required|string|max:255',
-            'file_path' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,png,jpeg|max:20480', 
+            'refleksi_diri' => 'required|string',
+            'pengakuan_iman' => 'required|string',
+            'bacaan_alkitab' => 'required|string',
             'content' => 'required|string',
         ]);
 
-        // Simpan file ke storage/app/public/resourcefile
-        $filePath = $request->file('file_path')->store('resourcefile', 'public');
-
-        $validatedData['file_path'] = $filePath;
         $validatedData['created_by'] = auth()->id();
         $validatedData['updated_by'] = auth()->id();
 
@@ -135,34 +110,28 @@ class ResourceFileController extends Controller
         return redirect()->route('admin.resourcefile.file')->with('success', 'Resource File berhasil dibuat!');
     }
 
-    public function update(Request $request, $id){
+    public function update(Request $request, $id)
+    {
         $resourceFile = ResourceFile::findOrFail($id);
 
         DB::beginTransaction();
         try {
             $validatedData = $request->validate([
                 'title' => 'required|string|max:255',
-                'nama_file' => 'required|string|max:255',
-                'file_path' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,png,jpeg|max:20480',
+                'refleksi_diri' => 'required|string',
+                'pengakuan_iman' => 'required|string',
+                'bacaan_alkitab' => 'required|string',
                 'content' => 'required|string',
             ]);
 
             $validatedData['updated_by'] = auth()->id();
 
-            // simpan data lama buat log
-            $oldData = $resourceFile->only(['title', 'nama_file', 'file_path', 'content', 'slug']);
-
-            // kalau ada file baru, hapus file lama lalu upload baru
-            if ($request->hasFile('file_path')) {
-                if ($resourceFile->file_path && Storage::disk('public')->exists($resourceFile->file_path)) {
-                    Storage::disk('public')->delete($resourceFile->file_path);
-                }
-                $validatedData['file_path'] = $request->file('file_path')->store('resourcefile', 'public');
-            }
+            // simpan data lama untuk log
+            $oldData = $resourceFile->only(['title', 'refleksi_diri', 'pengakuan_iman', 'bacaan_alkitab', 'content', 'slug']);
 
             $resourceFile->fill($validatedData);
 
-            // update slug kalau judul berubah
+            // update slug jika judul berubah
             if (!empty($validatedData['title']) && $validatedData['title'] !== $oldData['title']) {
                 $resourceFile->slug = $validatedData['title'];
             }
@@ -172,7 +141,7 @@ class ResourceFileController extends Controller
             Log::info("ResourceFile updated", [
                 'resourcefile_id' => $resourceFile->id,
                 'old_data' => $oldData,
-                'new_data' => $resourceFile->only(['title', 'nama_file', 'file_path', 'content', 'slug']),
+                'new_data' => $resourceFile->only(['title', 'refleksi_diri', 'pengakuan_iman', 'bacaan_alkitab', 'content', 'slug']),
                 'updated_by' => auth()->id()
             ]);
 
@@ -189,15 +158,17 @@ class ResourceFileController extends Controller
         }
     }
 
-    public function destroy($id){
+    public function destroy($id)
+    {
         $resourceFile = ResourceFile::findOrFail($id);
 
-        // hapus file fisik kalau ada
-        if ($resourceFile->file_path && Storage::disk('public')->exists($resourceFile->file_path)) {
-            Storage::disk('public')->delete($resourceFile->file_path);
-        }
+        $resourceFile->delete(); // soft delete
 
-        $resourceFile->delete();
+        Log::info("ResourceFile deleted", [
+            'resourcefile_id' => $resourceFile->id,
+            'title' => $resourceFile->title,
+            'deleted_by' => auth()->id()
+        ]);
 
         return back()->with('success', 'Resource File berhasil dihapus!');
     }

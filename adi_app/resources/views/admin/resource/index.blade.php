@@ -47,7 +47,8 @@
         </div> 
     </x-slot>
 
-    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.min.css">
+    {{-- CKEditor CSS & JS --}}
+    <script src="https://cdn.ckeditor.com/ckeditor5/40.1.0/classic/ckeditor.js"></script>
     
     <div class="container mx-auto p-6">
         {{-- Flash Message --}}
@@ -59,7 +60,7 @@
 
         {{-- Header --}}
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold">Latest Sermon</h1>
+            <h1 class="text-2xl font-bold">📖 Latest Sermon</h1>
             <button 
                 onclick="openModal('createModal')"
                 class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow"
@@ -102,7 +103,7 @@
                                 {{ $item->created_at->format('d M Y') }}
                             </td>
                             <td class="px-4 py-3 border border-gray-300 space-x-2">
-                                <button onclick="openModal('editModal-{{ $item->id }}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-sm">Edit</button>
+                                <button onclick="openEditModal('{{ $item->id }}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-sm">Edit</button>
                                 <form action="{{ route('admin.resource.destroy', $item->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Yakin mau hapus?')">
                                     @csrf
                                     @method('DELETE')
@@ -113,24 +114,36 @@
 
                         {{-- Modal Edit --}}
                         <div id="editModal-{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-                            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 flex flex-col max-h-[90vh] overflow-y-auto">
+                            <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 flex flex-col max-h-[90vh] overflow-y-auto">
                                 <h2 class="text-xl font-bold mb-4">Edit Resource</h2>
-                                <form action="{{ route('admin.resource.update', $item->id) }}" method="POST">
+                                <form id="edit-form-{{ $item->id }}" action="{{ route('admin.resource.update', $item->id) }}" method="POST">
                                     @csrf
                                     @method('PUT')
+                                    
                                     <div class="mb-4">
-                                        <label class="block text-sm font-medium">Title</label>
-                                        <input type="text" name="title" value="{{ old('title', $item->title) }}" class="w-full border rounded p-2 @error('title') border-red-500 @enderror">
+                                        <label class="block text-sm font-medium mb-2">Title <span class="text-red-500">*</span></label>
+                                        <input type="text" name="title" id="edit-title-{{ $item->id }}" value="{{ old('title', $item->title) }}" class="w-full border rounded p-2">
+                                        <div id="edit-title-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
                                     </div>
+                                    
                                     <div class="mb-4">
-                                        <label class="block text-sm font-medium">Content</label>
-                                        <input id="trix-edit-{{ $item->id }}" type="hidden" name="content" value="{{ old('content', $item->content) }}">
-                                        <trix-editor input="trix-edit-{{ $item->id }}" class="trix-content"></trix-editor>
+                                        <label class="block text-sm font-medium mb-2">Content <span class="text-red-500">*</span></label>
+                                        <textarea id="edit-content-{{ $item->id }}" name="content" class="ckeditor-edit">{{ old('content', $item->content) }}</textarea>
+                                        <div id="edit-content-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
                                     </div>
+                                    
                                     <div class="mb-4">
-                                        <label class="block text-sm font-medium">URL Thumbnail</label>
-                                        <input type="text" name="url" value="{{ old('url', $item->url) }}" class="w-full border rounded p-2 @error('url') border-red-500 @enderror">
+                                        <label class="block text-sm font-medium mb-2">URL Thumbnail <span class="text-red-500">*</span></label>
+                                        <input type="text" name="url" id="edit-url-{{ $item->id }}" value="{{ old('url', $item->url) }}" class="w-full border rounded p-2" placeholder="https://example.com/image.jpg">
+                                        <div id="edit-url-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
+                                        @if($item->thumbnail_url)
+                                            <div class="mt-2">
+                                                <p class="text-xs text-gray-500">Preview gambar saat ini:</p>
+                                                <img src="{{ $item->thumbnail_url }}" alt="Preview" class="w-32 h-20 object-cover rounded border mt-1">
+                                            </div>
+                                        @endif
                                     </div>
+                                    
                                     <div class="flex justify-end space-x-2 mt-4">
                                         <button type="button" onclick="closeModal('editModal-{{ $item->id }}')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
                                         <button type="submit" class="px-4 py-2 bg-yellow-600 text-white rounded-lg">Update</button>
@@ -146,32 +159,42 @@
 
     {{-- Modal Create --}}
     <div id="createModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 flex flex-col max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 flex flex-col max-h-[90vh] overflow-y-auto">
             <h2 class="text-xl font-bold mb-4">Tambah Resource</h2>
-            <form action="{{ route('admin.resource.store') }}" method="POST">
+            <form id="create-form" action="{{ route('admin.resource.store') }}" method="POST">
                 @csrf
+                
                 <div class="mb-4">
-                    <label class="block text-sm font-medium">Title</label>
-                    <input type="text" name="title" value="{{ old('title') }}" class="w-full border rounded p-2 @error('title') border-red-500 @enderror">
-                    @error('title')
-                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                    @enderror
+                    <label class="block text-sm font-medium mb-2">Title <span class="text-red-500">*</span></label>
+                    <input type="text" name="title" id="create-title" value="{{ old('title') }}" class="w-full border rounded p-2" placeholder="Masukkan judul sermon">
+                    <div id="create-title-error" class="text-red-600 text-sm mt-1 hidden">
+                        @error('title')
+                            {{ $message }}
+                        @enderror
+                    </div>
                 </div>
+                
                 <div class="mb-4">
-                    <label class="block text-sm font-medium">Content</label>
-                    <input id="trix-create" type="hidden" name="content">
-                    <trix-editor input="trix-create" class="trix-content"></trix-editor>
-                    @error('content')
-                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                    @enderror
+                    <label class="block text-sm font-medium mb-2">Content <span class="text-red-500">*</span></label>
+                    <textarea id="create-content" name="content" class="ckeditor-create">{{ old('content') }}</textarea>
+                    <div id="create-content-error" class="text-red-600 text-sm mt-1 hidden">
+                        @error('content')
+                            {{ $message }}
+                        @enderror
+                    </div>
                 </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium">URL Thumbnail</label>
-                    <input type="text" name="url" value="{{ old('url') }}" class="w-full border rounded p-2 @error('url') border-red-500 @enderror">
-                    @error('url')
-                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
+                
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">URL Thumbnail <span class="text-red-500">*</span></label>
+                        <input type="text" name="url" id="create-url" value="{{ old('url') }}" class="w-full border rounded p-2" placeholder="https://youtube.com/watch?v=... atau https://example.com/image.jpg">
+                        <p class="text-xs text-gray-500 mt-1">Masukkan URL YouTube atau URL gambar yang valid untuk thumbnail</p>
+                        <div id="create-url-error" class="text-red-600 text-sm mt-1 hidden">
+                            @error('url')
+                                {{ $message }}
+                            @enderror
+                        </div>
+                    </div>
+                
                 <div class="flex justify-end space-x-2 mt-4">
                     <button type="button" onclick="closeModal('createModal')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
                     <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Simpan</button>
@@ -186,13 +209,35 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.min.js"></script>
 
     <script>
+        let createEditor, editEditors = {};
+
         $(document).ready(function () {
+            // Initialize DataTable
             let table = $('#resourceTable').DataTable({
-                responsive: true,
+                responsive: {
+                    breakpoints: [
+                        { name: 'desktop', width: Infinity },
+                        { name: 'tablet',  width: 1024 },
+                        { name: 'mobile',  width: 640 }
+                    ],
+                    details: {
+                        renderer: function ( api, rowIdx, columns ) {
+                            let data = $.map(columns, function (col) {
+                                return col.hidden
+                                    ? `<div class="flex flex-col sm:flex-row sm:items-start sm:gap-2 py-2 border-b">
+                                            <span class="font-bold text-gray-800 min-w-[100px]">${col.title} :</span>
+                                            <span class="text-gray-600 break-words">${col.data}</span>
+                                       </div>`
+                                    : '';
+                            }).join('');
+                            return data ? $('<div class="p-3"/>').append(data) : false;
+                        }
+                    }
+                },
                 pageLength: 10,
+                lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Semua"] ],
                 language: {
                     search: "Cari:",
                     lengthMenu: "Tampilkan _MENU_ data per halaman",
@@ -206,34 +251,310 @@
                 order: [[1, 'asc']]
             });
 
+            // Reindex nomor urut
             table.on('order.dt search.dt draw.dt', function () {
                 table.column(0, { search: 'applied', order: 'applied' }).nodes().each((cell, i) => cell.innerHTML = i + 1);
             }).draw();
 
+            // Auto open modal jika ada validation error
             @if($errors->any())
                 openModal('createModal');
             @endif
+
+            // Initialize CKEditor for create modal
+            initializeCreateEditor();
+
+            // Setup form validation
+            setupFormValidation();
         });
 
-        function openModal(id) {
-            document.getElementById(id).classList.remove('hidden');
-            if (id === 'createModal') {
-                const trixInput = document.getElementById('trix-create');
-                const trixEditor = document.querySelector('#createModal trix-editor');
-                if (trixInput && trixEditor) {
-                    trixInput.value = '';
-                    trixEditor.editor.loadHTML('');
+        // Initialize CKEditor for create modal
+        function initializeCreateEditor() {
+            ClassicEditor
+                .create(document.querySelector('#create-content'), {
+                    toolbar: {
+                        items: [
+                            'heading',
+                            '|',
+                            'bold',
+                            'italic',
+                            'link',
+                            'bulletedList',
+                            'numberedList',
+                            '|',
+                            'outdent',
+                            'indent',
+                            '|',
+                            'blockQuote',
+                            'insertTable',
+                            'mediaEmbed',
+                            'undo',
+                            'redo'
+                        ]
+                    },
+                    language: 'id',
+                    table: {
+                        contentToolbar: [
+                            'tableColumn',
+                            'tableRow',
+                            'mergeTableCells'
+                        ]
+                    }
+                })
+                .then(editor => {
+                    createEditor = editor;
+                })
+                .catch(error => {
+                    console.error('CKEditor initialization failed:', error);
+                });
+        }
+
+        // Initialize CKEditor for edit modal
+        function initializeEditEditor(itemId) {
+            if (editEditors[itemId]) {
+                return; // Editor already initialized
+            }
+
+            ClassicEditor
+                .create(document.querySelector(`#edit-content-${itemId}`), {
+                    toolbar: {
+                        items: [
+                            'heading',
+                            '|',
+                            'bold',
+                            'italic',
+                            'link',
+                            'bulletedList',
+                            'numberedList',
+                            '|',
+                            'outdent',
+                            'indent',
+                            '|',
+                            'blockQuote',
+                            'insertTable',
+                            'mediaEmbed',
+                            'undo',
+                            'redo'
+                        ]
+                    },
+                    language: 'id',
+                    table: {
+                        contentToolbar: [
+                            'tableColumn',
+                            'tableRow',
+                            'mergeTableCells'
+                        ]
+                    }
+                })
+                .then(editor => {
+                    editEditors[itemId] = editor;
+                })
+                .catch(error => {
+                    console.error(`CKEditor initialization failed for edit-${itemId}:`, error);
+                });
+        }
+
+        // Form validation setup
+        function setupFormValidation() {
+            // Create form validation
+            $('#create-form').on('submit', function(e) {
+                let isValid = true;
+                clearErrors('create');
+
+                // Title validation
+                const title = $('#create-title').val().trim();
+                if (!title) {
+                    showError('create-title-error', 'Title harus diisi');
+                    isValid = false;
+                } else if (title.length < 3) {
+                    showError('create-title-error', 'Title minimal 3 karakter');
+                    isValid = false;
+                } else if (title.length > 255) {
+                    showError('create-title-error', 'Title maksimal 255 karakter');
+                    isValid = false;
+                }
+
+                // Content validation
+                const content = createEditor ? createEditor.getData().trim() : '';
+                if (!content || content === '<p>&nbsp;</p>' || content === '<p></p>') {
+                    showError('create-content-error', 'Content harus diisi');
+                    isValid = false;
+                } else if (content.length < 10) {
+                    showError('create-content-error', 'Content minimal 10 karakter');
+                    isValid = false;
+                }
+
+                // URL validation
+                const url = $('#create-url').val().trim();
+                if (!url) {
+                    showError('create-url-error', 'URL Thumbnail harus diisi');
+                    isValid = false;
+                } else if (!isValidUrl(url)) {
+                    showError('create-url-error', 'URL harus berupa alamat yang valid (contoh: https://youtube.com/watch?v=... atau https://example.com/image.jpg)');
+                    isValid = false;
+                } else if (!isValidThumbnailUrl(url)) {
+                    showError('create-url-error', 'URL harus mengarah ke YouTube atau file gambar (jpg, jpeg, png, gif, webp)');
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    e.preventDefault();
+                }
+            });
+
+            // Edit form validation
+            $('[id^="edit-form-"]').on('submit', function(e) {
+                const itemId = this.id.split('-')[2];
+                let isValid = true;
+                clearErrors('edit', itemId);
+
+                // Title validation
+                const title = $(`#edit-title-${itemId}`).val().trim();
+                if (!title) {
+                    showError(`edit-title-error-${itemId}`, 'Title harus diisi');
+                    isValid = false;
+                } else if (title.length < 3) {
+                    showError(`edit-title-error-${itemId}`, 'Title minimal 3 karakter');
+                    isValid = false;
+                } else if (title.length > 255) {
+                    showError(`edit-title-error-${itemId}`, 'Title maksimal 255 karakter');
+                    isValid = false;
+                }
+
+                // Content validation
+                const content = editEditors[itemId] ? editEditors[itemId].getData().trim() : '';
+                if (!content || content === '<p>&nbsp;</p>' || content === '<p></p>') {
+                    showError(`edit-content-error-${itemId}`, 'Content harus diisi');
+                    isValid = false;
+                } else if (content.length < 10) {
+                    showError(`edit-content-error-${itemId}`, 'Content minimal 10 karakter');
+                    isValid = false;
+                }
+
+                // URL validation
+                const url = $(`#edit-url-${itemId}`).val().trim();
+                if (!url) {
+                    showError(`edit-url-error-${itemId}`, 'URL Thumbnail harus diisi');
+                    isValid = false;
+                } else if (!isValidUrl(url)) {
+                    showError(`edit-url-error-${itemId}`, 'URL harus berupa alamat yang valid (contoh: https://youtube.com/watch?v=... atau https://example.com/image.jpg)');
+                    isValid = false;
+                } else if (!isValidThumbnailUrl(url)) {
+                    showError(`edit-url-error-${itemId}`, 'URL harus mengarah ke YouTube atau file gambar (jpg, jpeg, png, gif, webp)');
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    e.preventDefault();
+                }
+            });
+        }
+
+        // Utility functions
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            if (errorElement) {
+                errorElement.textContent = message;
+                errorElement.classList.remove('hidden');
+                
+                // Add red border to input
+                const inputId = elementId.replace('-error', '');
+                const inputElement = document.getElementById(inputId);
+                if (inputElement) {
+                    inputElement.classList.add('border-red-500');
                 }
             }
         }
-        
-        function closeModal(id) {
-            document.getElementById(id).classList.add('hidden');
+
+        function clearErrors(type, itemId = '') {
+            const suffix = itemId ? `-${itemId}` : '';
+            const fields = ['title', 'content', 'url'];
+            
+            fields.forEach(field => {
+                const errorId = `${type}-${field}-error${suffix}`;
+                const errorElement = document.getElementById(errorId);
+                if (errorElement) {
+                    errorElement.classList.add('hidden');
+                    errorElement.textContent = '';
+                }
+                
+                // Remove red border
+                const inputId = `${type}-${field}${suffix}`;
+                const inputElement = document.getElementById(inputId);
+                if (inputElement) {
+                    inputElement.classList.remove('border-red-500');
+                }
+            });
         }
 
+        function isValidUrl(string) {
+            try {
+                const url = new URL(string);
+                return url.protocol === 'http:' || url.protocol === 'https:';
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function isValidThumbnailUrl(url) {
+            // Check for YouTube URLs
+            const youtubePattern = /^https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)/i;
+            if (youtubePattern.test(url)) {
+                return true;
+            }
+            
+            // Check for direct image URLs
+            const imagePattern = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i;
+            return imagePattern.test(url);
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            clearErrors('create');
+            
+            if (id === 'createModal') {
+                // Reset form
+                document.getElementById('create-form').reset();
+                if (createEditor) {
+                    createEditor.setData('');
+                }
+            }
+        }
+
+        function openEditModal(itemId) {
+            const modalId = `editModal-${itemId}`;
+            document.getElementById(modalId).classList.remove('hidden');
+            clearErrors('edit', itemId);
+            
+            // Initialize CKEditor for this edit modal if not already initialized
+            initializeEditEditor(itemId);
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+            
+            if (id === 'createModal') {
+                clearErrors('create');
+            } else if (id.startsWith('editModal-')) {
+                const itemId = id.split('-')[1];
+                clearErrors('edit', itemId);
+            }
+        }
+
+        // Auto hide flash message
         setTimeout(() => {
             let flash = document.getElementById('flash-message');
-            if(flash){ flash.style.opacity='0'; setTimeout(()=>flash.remove(),500); }
+            if (flash) {
+                flash.style.opacity = '0';
+                setTimeout(() => flash.remove(), 500);
+            }
         }, 3000);
+
+        // Show existing validation errors on page load
+        @if($errors->any())
+            @foreach($errors->all() as $error)
+                console.log('Validation error: {{ $error }}');
+            @endforeach
+        @endif
     </script>
 </x-app-layout>
