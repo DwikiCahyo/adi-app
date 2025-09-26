@@ -88,6 +88,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/dashboard', [NewsController::class, 'store'])->name('admin.dashboard.store');
     Route::put('/dashboard/{news}', [NewsController::class, 'update'])->name('admin.dashboard.update');
     Route::delete('/dashboard/{news}', [NewsController::class, 'destroy'])->name('admin.dashboard.destroy');
+    Route::delete('/dashboard/image/{imageId}', [NewsController::class, 'removeImage'])->name('admin.image.remove');
     
     //Halaman Admin Event
     Route::get('/eventsAdmin', [EventsController::class, 'index'])->name('admin.event.index');

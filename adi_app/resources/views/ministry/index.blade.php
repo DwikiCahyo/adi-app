@@ -80,7 +80,9 @@
     {{-- Content --}}
     <div id="ministry-content" class="max-w-2xl mx-auto space-y-8 pb-32">
         <template x-for="item in ministry.filter(m => m.category === category)" :key="item.id">
-            <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+            {{-- Mengubah div menjadi clickable link dengan cursor pointer --}}
+            <a :href="'/ministry/' + item.slug" 
+               class="bg-white shadow-sm rounded-lg overflow-hidden block hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 cursor-pointer group">
 
                 {{-- Gambar + Carousel --}}
                 <template x-if="item.images && item.images.length > 0">
@@ -94,26 +96,27 @@
                             } else if (endX - startX > 50) {
                                 active = (active - 1 + item.images.length) % item.images.length; 
                             }
-                         ">
-
+                         "
+                         @click.stop="">
+                        
                         <div class="w-full flex items-center justify-center bg-white">
                             <template x-for="(img, i) in item.images" :key="i">
                                 <img x-show="active === i"
                                      :src="'/storage/' + img.image" 
                                      :alt="item.title" 
-                                     class="max-h-[500px] w-auto object-contain transition duration-500 ease-in-out">
+                                     class="max-h-[500px] w-auto object-contain transition duration-500 ease-in-out group-hover:scale-105">
                             </template>
                         </div>
 
                         {{-- Prev / Next --}}
                         <template x-if="item.images.length > 1">
                             <div>
-                                <button @click="active = (active - 1 + item.images.length) % item.images.length"
-                                        class="absolute top-1/2 left-2 -translate-y-1/2 bg-gray-700 bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70">
+                                <button @click.stop="active = (active - 1 + item.images.length) % item.images.length"
+                                        class="absolute top-1/2 left-2 -translate-y-1/2 bg-gray-700 bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 z-10">
                                     ‹
                                 </button>
-                                <button @click="active = (active + 1) % item.images.length"
-                                        class="absolute top-1/2 right-2 -translate-y-1/2 bg-gray-700 bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70">
+                                <button @click.stop="active = (active + 1) % item.images.length"
+                                        class="absolute top-1/2 right-2 -translate-y-1/2 bg-gray-700 bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 z-10">
                                     ›
                                 </button>
                             </div>
@@ -123,8 +126,8 @@
                         <template x-if="item.images.length > 1">
                             <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-2">
                                 <template x-for="(img, i) in item.images" :key="i">
-                                    <div @click="active = i"
-                                         class="w-3 h-3 rounded-full cursor-pointer"
+                                    <div @click.stop="active = i"
+                                         class="w-3 h-3 rounded-full cursor-pointer z-10"
                                          :class="active === i ? 'bg-blue-500' : 'bg-gray-300'"></div>
                                 </template>
                             </div>
@@ -134,15 +137,15 @@
 
                 {{-- Judul & Konten --}}
                 <div class="p-4">
-                    <h2 class="text-xl font-bold text-gray-800 mb-2" x-text="item.title"></h2>
+                    <h2 class="text-xl font-bold text-gray-800 mb-2 group-hover:text-red-600 transition-colors duration-300" 
+                        x-text="item.title"></h2>
 
-                    {{-- Link dinamis berdasarkan slug dari Alpine.js --}}
-                    <a :href="'/ministry/' + item.slug" 
-                        class="mt-auto text-red-600 font-bold hover:underline">
+                    {{-- Text indikator yang sekarang hanya untuk visual --}}
+                    <div class="mt-auto text-red-600 font-bold group-hover:underline transition-all duration-300">
                         FIND OUT MORE
-                    </a>
+                    </div>
                 </div>
-            </div>
+            </a>
         </template>
 
         {{-- Kalau kosong --}}
