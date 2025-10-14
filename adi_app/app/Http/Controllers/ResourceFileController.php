@@ -2,17 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreNewsRequest;
-use App\Http\Requests\UpdateNewsRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use App\Models\ResourceFile;
-use App\Http\Resources\NewsResource;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class ResourceFileController extends Controller
@@ -21,7 +16,8 @@ class ResourceFileController extends Controller
     {
         $resourceFiles = ResourceFile::with(['creator', 'updater'])
                     ->active()
-                    ->recent()
+                    ->published()
+                    ->orderBy('publish_at', 'desc')
                     ->get();
 
         Log::info("ResourceFile index request", [
@@ -32,183 +28,153 @@ class ResourceFileController extends Controller
         ]);
 
         if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'data'    => $resourceFiles,
-                'total'   => $resourceFiles->count(),
-                'message' => 'Data Resource File berhasil ditampilkan'
-            ]);
+            return response()->json(['success' => true, 'data' => $resourceFiles, 'total' => $resourceFiles->count(), 'message' => 'Data Resource File berhasil ditampilkan']);
         }
 
         return view('resource.file', compact('resourceFiles'));
     }
 
-    public function show(Request $request, ResourceFile $resourceFile)
-    {
-        $resourceFile->load(['creator', 'updater']);
+    public function show(Request $request){
+        $resourcefile = ResourceFile::with(['creator', 'updater'])
+                    ->active()
+                    ->published()
+                    ->orderBy('publish_at', 'desc')
+                    ->get();
 
-        Log::info("ResourceFile show request", [
-            'resourcefile_id' => $resourceFile->id,
-            'resourcefile_slug' => $resourceFile->slug,
-            'title' => $resourceFile->title,
+        Log::info("ResourceFile show (list) request", [
+            'total_resourcefile' => $resourcefile->count(),
             'expects_json' => $request->expectsJson(),
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent()
         ]);
-
-        // Ambil semua data untuk archive (kecuali current)
-        $archives = ResourceFile::orderBy('created_at', 'desc')
-            ->where('id', '!=', $resourceFile->id)
-            ->get();
 
         if ($request->expectsJson()) {
             return response()->json([
-                'success' => true,
-                'data'    => $resourceFile,
-                'message' => 'Data resource file berhasil ditampilkan'
+                'success' => true, 
+                'data' => $resourcefile, 
+                'total' => $resourcefile->count(), 
+                'message' => 'Data Resource File berhasil ditampilkan'
             ]);
         }
 
-        return view('resourcefile.show', compact('resourceFile', 'archives'));
+        // View untuk menampilkan LIST Good News
+        return view('resourcefile.show', compact('resourcefile'));
     }
-
+    
     public function showfile($id)
     {
         $resourcefile = ResourceFile::findOrFail($id);
+        if (!$resourcefile->isPublished()) {
+            abort(404);
+        }
         return view('resourcefile.showfile', compact('resourcefile'));
     }
 
     public function ResourceFileAdmin()
     {
-        $resourcefile = ResourceFile::with(['creator', 'updater'])
-            ->active()
-            ->get();
-
+        $resourcefile = ResourceFile::with(['creator', 'updater'])->active()->orderBy('publish_at', 'desc')->get();
         return view('admin.resource.file', compact('resourcefile'));
     }
 
     public function store(Request $request)
     {
-        // Validasi input termasuk field tanggal
         $validatedData = $request->validate([
-            'title' => 'required|string|max:255',
-            'refleksi_diri' => 'required|string',
-            'pengakuan_iman' => 'required|string',
-            'bacaan_alkitab' => 'required|string',
-            'content' => 'required|string',
-            'tanggal' => 'required|date', // Field tanggal yang dipilih user
+            'title' => 'required|string|max:255', 'refleksi_diri' => 'required|string',
+            'pengakuan_iman' => 'required|string', 'bacaan_alkitab' => 'required|string',
+            'content' => 'required|string', 'tanggal' => 'required|date',
         ]);
 
-        // Konversi tanggal yang dipilih user ke Carbon untuk created_at
-        $selectedDate = Carbon::parse($validatedData['tanggal']);
+        $now = now('Asia/Jakarta');
+        $selectedDate = Carbon::parse($validatedData['tanggal'])->setTimezone('Asia/Jakarta');
         
-        // Set data untuk disimpan ke database
-        $dataToSave = [
-            'title' => $validatedData['title'],
-            'refleksi_diri' => $validatedData['refleksi_diri'],
-            'pengakuan_iman' => $validatedData['pengakuan_iman'],
-            'bacaan_alkitab' => $validatedData['bacaan_alkitab'],
-            'content' => $validatedData['content'],
-            'created_at' => $selectedDate, // Tanggal yang dipilih user
+        // =================================================================
+        // PERUBAHAN LOGIKA UTAMA ADA DI SINI
+        // =================================================================
+        $publishDate;
+        if ($selectedDate->isToday()) {
+            // Jika pilih hari ini, publish SEKARANG JUGA.
+            $publishDate = $now;
+        } else {
+            // Jika pilih tanggal lain (masa depan/lalu), set ke jam 00:00.
+            $publishDate = $selectedDate->startOfDay();
+        }
+
+        $status = $publishDate->lte($now) ? 'published' : 'scheduled';
+        
+        $dataToSave = array_merge($validatedData, [
+            'publish_at' => $publishDate,
+            'status' => $status,
+            'created_at' => $now,
             'created_by' => auth()->id(),
             'updated_by' => auth()->id(),
-        ];
-
-        // Simpan ke database
-        $resourceFile = ResourceFile::create($dataToSave);
-
-        // Log untuk debug
-        Log::info("ResourceFile created", [
-            'resourcefile_id' => $resourceFile->id,
-            'title' => $resourceFile->title,
-            'selected_date' => $selectedDate->format('Y-m-d'),
-            'created_at_db' => $resourceFile->created_at->format('Y-m-d H:i:s'),
-            'created_by' => auth()->id()
         ]);
+        unset($dataToSave['tanggal']); // Hapus 'tanggal' karena sudah dihandle oleh 'publish_at'
 
-        return redirect()->route('admin.resourcefile.file')
-            ->with('success', 'Resource File berhasil dibuat!');
+        $resourceFile = ResourceFile::create($dataToSave);
+        Log::info("ResourceFile created", ['resourcefile_id' => $resourceFile->id, 'title' => $resourceFile->title, 'status' => $status]);
+
+        $message = $status === 'scheduled' 
+            ? "Resource File berhasil dibuat dan dijadwalkan publish pada {$publishDate->format('d M Y, 00:00 WIB')}!"
+            : "Resource File berhasil dibuat dan langsung dipublish!";
+
+        return redirect()->route('admin.resourcefile.file')->with('success', $message);
     }
 
     public function update(Request $request, $id)
     {
         $resourceFile = ResourceFile::findOrFail($id);
+        $validatedData = $request->validate([
+            'title' => 'required|string|max:255', 'refleksi_diri' => 'required|string',
+            'pengakuan_iman' => 'required|string', 'bacaan_alkitab' => 'required|string',
+            'content' => 'required|string', 'tanggal' => 'required|date',
+        ]);
+
+        $now = now('Asia/Jakarta');
+        $selectedDate = Carbon::parse($validatedData['tanggal'])->setTimezone('Asia/Jakarta');
+        
+        // =================================================================
+        // PERUBAHAN LOGIKA UTAMA ADA DI SINI
+        // =================================================================
+        $publishDate;
+        if ($selectedDate->isToday()) {
+            // Jika pilih hari ini, publish SEKARANG JUGA.
+            $publishDate = $now;
+        } else {
+            // Jika pilih tanggal lain (masa depan/lalu), set ke jam 00:00.
+            $publishDate = $selectedDate->startOfDay();
+        }
+
+        $status = $publishDate->lte($now) ? 'published' : 'scheduled';
 
         DB::beginTransaction();
         try {
-            // Validasi input termasuk field tanggal
-            $validatedData = $request->validate([
-                'title' => 'required|string|max:255',
-                'refleksi_diri' => 'required|string',
-                'pengakuan_iman' => 'required|string',
-                'bacaan_alkitab' => 'required|string',
-                'content' => 'required|string',
-                'tanggal' => 'required|date', // Field tanggal yang dipilih user
-            ]);
-
-            // Konversi tanggal yang dipilih user ke Carbon untuk created_at
-            $selectedDate = Carbon::parse($validatedData['tanggal']);
-
-            // Simpan data lama untuk log
-            $oldData = $resourceFile->only([
-                'title', 'refleksi_diri', 'pengakuan_iman', 
-                'bacaan_alkitab', 'content', 'slug', 'created_at'
-            ]);
-
-            // Update data
-            $resourceFile->title = $validatedData['title'];
-            $resourceFile->refleksi_diri = $validatedData['refleksi_diri'];
-            $resourceFile->pengakuan_iman = $validatedData['pengakuan_iman'];
-            $resourceFile->bacaan_alkitab = $validatedData['bacaan_alkitab'];
-            $resourceFile->content = $validatedData['content'];
-            $resourceFile->created_at = $selectedDate; // Update created_at dengan tanggal yang dipilih
+            $resourceFile->fill($validatedData);
+            $resourceFile->publish_at = $publishDate;
+            $resourceFile->status = $status;
             $resourceFile->updated_by = auth()->id();
-
-            // Update slug jika judul berubah
-            if ($validatedData['title'] !== $oldData['title']) {
+            if ($resourceFile->isDirty('title')) {
                 $resourceFile->slug = $validatedData['title'];
             }
-
-            // Simpan perubahan
             $resourceFile->save();
-
-            // Log untuk debug
-            Log::info("ResourceFile updated", [
-                'resourcefile_id' => $resourceFile->id,
-                'old_created_at' => $oldData['created_at']->format('Y-m-d'),
-                'new_selected_date' => $selectedDate->format('Y-m-d'),
-                'new_created_at_db' => $resourceFile->created_at->format('Y-m-d H:i:s'),
-                'updated_by' => auth()->id()
-            ]);
-
             DB::commit();
 
-            return back()->with('success', 'Resource File berhasil diedit!');
+            Log::info("ResourceFile updated", ['resourcefile_id' => $resourceFile->id, 'new_status' => $status]);
+
+            $message = $status === 'scheduled' 
+                ? "Resource File berhasil diupdate dan dijadwalkan publish pada {$publishDate->format('d M Y, 00:00 WIB')}!"
+                : "Resource File berhasil diupdate dan dipublish!";
             
+            return back()->with('success', $message);
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error("ResourceFile update failed", [
-                'resourcefile_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return back()->withErrors('Terjadi kesalahan saat update Resource File: ' . $e->getMessage());
+            Log::error("ResourceFile update failed", ['resourcefile_id' => $id, 'error' => $e->getMessage()]);
+            return back()->withErrors('Terjadi kesalahan saat update: ' . $e->getMessage());
         }
     }
 
     public function destroy($id)
     {
         $resourceFile = ResourceFile::findOrFail($id);
-
-        // Soft delete
         $resourceFile->delete();
-
-        Log::info("ResourceFile deleted", [
-            'resourcefile_id' => $resourceFile->id,
-            'title' => $resourceFile->title,
-            'deleted_by' => auth()->id()
-        ]);
-
+        Log::info("ResourceFile deleted", ['resourcefile_id' => $id, 'deleted_by' => auth()->id()]);
         return back()->with('success', 'Resource File berhasil dihapus!');
     }
 }

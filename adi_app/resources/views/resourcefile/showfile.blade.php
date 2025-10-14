@@ -19,7 +19,7 @@
         <div class="text-center mb-8">
             {{-- Tanggal --}}
             <p class="text-sm text-gray-500 mb-4 print-date">
-                {{ $resourcefile->created_at ? $resourcefile->created_at->translatedFormat('l, d F Y') : '-' }}
+                {{ $resourcefile->publish_at ? $resourcefile->publish_at->translatedFormat('l, d F Y') : '-' }}
             </p>
             
             {{-- Judul --}}

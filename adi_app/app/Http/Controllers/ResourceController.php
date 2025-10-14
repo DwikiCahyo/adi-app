@@ -12,13 +12,19 @@ use App\Models\Resource;
 use App\Http\Resources\NewsResource;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class ResourceController extends Controller
 {
-    public function index(Request $request): View|JsonResponse{
+    /**
+     * Display listing for frontend (hanya yang published)
+     */
+    public function index(Request $request): View|JsonResponse
+    {
         $resource = Resource::with(['creator', 'updater'])
                     ->active()
-                    ->recent()
+                    ->published()
+                    ->orderBy('publish_at', 'desc')
                     ->get()
                     ->map(function ($item) {
                         $item->thumbnail_url = $this->getVideoThumbnail($item->url);
@@ -44,10 +50,45 @@ class ResourceController extends Controller
         return view('resource.index', compact('resource'));
     }
 
-     /**
+    /**
+     * Display single resource (frontend - hanya yang published)
+     */
+    public function show(Request $request)
+    {
+        // Ambil semua resource yang published
+        $resources = Resource::with(['creator','updater'])
+            ->active()
+            ->published()
+            ->orderBy('publish_at', 'desc')
+            ->get();
+    
+        if ($resources->isEmpty()) {
+            abort(404, 'No published resources found');
+        }
+    
+        // Tambahkan embed_url + thumbnail_url pada tiap item
+        $resources->transform(function ($item) {
+            $item->embed_url = $item->url ? $this->convertVideoToEmbed($item->url) : null;
+            $item->thumbnail_url = $item->url
+                ? $this->getVideoThumbnail($item->url)
+                : asset('images/default-thumbnail.jpg');
+            return $item;
+        });
+    
+        // Main resource (yang pertama)
+        $resource = $resources->first();
+    
+        // Related = semua selain yang pertama
+        $related = $resources->slice(1);
+    
+        return view('resource.show', compact('resource', 'related', 'resources'));
+    }
+
+    /**
      * Ambil thumbnail dari URL video
      */
-    private function getVideoThumbnail($url){
+    private function getVideoThumbnail($url)
+    {
         if (preg_match('/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^\&\?]+)/', $url, $matches)) {
             return 'https://img.youtube.com/vi/' . $matches[1] . '/hqdefault.jpg';
         }
@@ -58,45 +99,12 @@ class ResourceController extends Controller
 
         return asset('images/default-thumbnail.jpg');
     }
-
-    public function show(Request $request)
-    {
-        // ambil semua resource (active + urut terbaru)
-        $resources = Resource::with(['creator','updater'])
-            ->active()
-            ->latest()
-            ->get();
-    
-        if ($resources->isEmpty()) {
-            // Jangan tampilkan halaman kosong — kembalikan 404 atau redirect sesuai kebutuhan
-            abort(404, 'No resources found');
-        }
-    
-        // tambahkan embed_url + thumbnail_url pada tiap item
-        $resources->transform(function ($item) {
-            $item->embed_url = $item->url ? $this->convertVideoToEmbed($item->url) : null;
-            $item->thumbnail_url = $item->url
-                ? $this->getVideoThumbnail($item->url)
-                : asset('images/default-thumbnail.jpg');
-            return $item;
-        });
-    
-        // main resource (yang pertama)
-        $resource = $resources->first();
-    
-        // related = semua selain yang pertama (Collection)
-        $related = $resources->slice(1);
-    
-        // kirim semuanya ke view — view kamu memakai $resource (main) dan $related
-        return view('resource.show', compact('resource', 'related', 'resources'));
-    }
-    
-
     
     /**
-     * Convert video link to embeddable link.
+     * Convert video link to embeddable link
      */
-    private function convertVideoToEmbed($url){
+    private function convertVideoToEmbed($url)
+    {
         if (preg_match('/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^\&\?]+)/', $url, $matches)) {
             return 'https://www.youtube.com/embed/' . $matches[1];
         }
@@ -108,14 +116,19 @@ class ResourceController extends Controller
         return $url; 
     }
 
-    //ADMIN
+    //==================== ADMIN SECTION ====================
 
-    public function ResourceAdmin(){
+    /**
+     * Display all resources for admin (termasuk draft & scheduled)
+     */
+    public function ResourceAdmin()
+    {
         $resource = Resource::with(['creator', 'updater'])
             ->active()
+            ->orderBy('publish_at', 'desc')
             ->get();
 
-        // tambahin embed & thumbnail
+        // Tambahin embed & thumbnail
         $resource->transform(function ($item) {
             $item->embed_url = $item->url ? $this->convertVideoToEmbed($item->url) : null;
             $item->thumbnail_url = $item->url
@@ -127,67 +140,136 @@ class ResourceController extends Controller
         return view('admin.resource.index', compact('resource'));
     }
 
-    public function store(StoreNewsRequest $request){
-        $validatedData = $request->validated();
-        $validatedData['created_by'] = auth()->id();
-        $validatedData['updated_by'] = auth()->id();
-    
-        $resource = Resource::create($validatedData);
+    /**
+     * Store new resource
+     */
+    public function store(Request $request)
+    {
+        $validatedData = $request->validate([
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
+            'url' => 'required|url',
+            'tanggal' => 'required|date',
+        ]);
+
+        $now = now('Asia/Jakarta');
+        $selectedDate = Carbon::parse($validatedData['tanggal'])->setTimezone('Asia/Jakarta');
+        
+        // Logika publish
+        $publishDate;
+        if ($selectedDate->isToday()) {
+            // Jika pilih hari ini, publish SEKARANG JUGA
+            $publishDate = $now;
+        } else {
+            // Jika pilih tanggal lain, set ke jam 00:00
+            $publishDate = $selectedDate->startOfDay();
+        }
+
+        $status = $publishDate->lte($now) ? 'published' : 'scheduled';
+        
+        $dataToSave = [
+            'title' => $validatedData['title'],
+            'content' => $validatedData['content'],
+            'url' => $validatedData['url'],
+            'publish_at' => $publishDate,
+            'status' => $status,
+            'created_by' => auth()->id(),
+            'updated_by' => auth()->id(),
+        ];
+
+        $resource = Resource::create($dataToSave);
     
         Log::info("Resource created", [
             'resource_id' => $resource->id,
             'title' => $resource->title,
+            'status' => $status,
             'created_by' => auth()->id()
         ]);
+
+        $message = $status === 'scheduled' 
+            ? "Latest Sermon berhasil dibuat dan dijadwalkan publish pada {$publishDate->format('d M Y, H:i')} WIB!"
+            : "Latest Sermon berhasil dibuat dan langsung dipublish!";
     
-        // Redirect ke dashboard yang otomatis ambil semua news
-        return redirect()->route('admin.resource.index')->with('success', 'Resource berhasil dibuat!');
+        return redirect()->route('admin.resource.index')->with('success', $message);
     }
 
-    public function update(UpdateNewsRequest $request, $id)
+    /**
+     * Update existing resource
+     */
+    public function update(Request $request, $id)
     {
         $resource = Resource::findOrFail($id);
 
+        $validatedData = $request->validate([
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
+            'url' => 'required|url',
+            'tanggal' => 'required|date',
+        ]);
+
+        $now = now('Asia/Jakarta');
+        $selectedDate = Carbon::parse($validatedData['tanggal'])->setTimezone('Asia/Jakarta');
+        
+        // Logika publish
+        $publishDate;
+        if ($selectedDate->isToday()) {
+            $publishDate = $now;
+        } else {
+            $publishDate = $selectedDate->startOfDay();
+        }
+
+        $status = $publishDate->lte($now) ? 'published' : 'scheduled';
+
         DB::beginTransaction();
         try {
-            $validatedData = $request->validated();
-            $validatedData['updated_by'] = auth()->id();
-
-            $oldData = $resource->only(['title', 'url', 'content', 'slug']);
-
             $resource->fill($validatedData);
+            $resource->publish_at = $publishDate;
+            $resource->status = $status;
+            $resource->updated_by = auth()->id();
 
-            // supaya slug tetap konsisten
-            if (!empty($validatedData['title']) && $validatedData['title'] !== $oldData['title']) {
+            // Update slug jika title berubah
+            if ($resource->isDirty('title')) {
                 $resource->slug = $validatedData['title'];
             }
 
             $resource->save();
 
             Log::info("Resource updated", [
-                'resource_id'   => $resource->id,
-                'old_data'  => $oldData,
-                'new_data'  => $resource->only(['title', 'url', 'content', 'slug']),
-                'updated_by'=> auth()->id()
+                'resource_id' => $resource->id,
+                'new_status' => $status,
+                'updated_by' => auth()->id()
             ]);
 
             DB::commit();
 
-            return back()->with('success', 'resource berhasil diedit!');
+            $message = $status === 'scheduled' 
+                ? "Latest Sermon berhasil diupdate dan dijadwalkan publish pada {$publishDate->format('d M Y, H:i')} WIB!"
+                : "Latest Sermon berhasil diupdate dan dipublish!";
+
+            return back()->with('success', $message);
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error("Resource update failed", [
                 'resource_id' => $id,
-                'error'   => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
-            return back()->withErrors('Terjadi kesalahan saat update resource');
+            return back()->withErrors('Terjadi kesalahan saat update resource: ' . $e->getMessage());
         }
     }
 
-    public function destroy($id){
+    /**
+     * Delete resource
+     */
+    public function destroy($id)
+    {
         $resource = Resource::findOrFail($id);
         $resource->delete();
-        return back()->with('success', 'Resource berhasil didelete!');
+        
+        Log::info("Resource deleted", [
+            'resource_id' => $id,
+            'deleted_by' => auth()->id()
+        ]);
+        
+        return back()->with('success', 'Latest Sermon berhasil dihapus!');
     }
 }
-

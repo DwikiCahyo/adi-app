@@ -1,3 +1,5 @@
+{{-- FILE 6: resources/views/admin/resource/file.blade.php --}}
+
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center sm:-my-px sm:ms-10">
@@ -57,11 +59,12 @@
                     <tr class="divide-x divide-gray-300">
                         <th class="px-4 py-3 border border-gray-300 rounded-tl-lg">ID</th>
                         <th class="px-4 py-3 border border-gray-300">Title</th>
+                        <th class="px-4 py-3 border border-gray-300">Status</th>
+                        <th class="px-4 py-3 border border-gray-300">Tanggal Publish</th>
                         <th class="px-4 py-3 border border-gray-300">Refleksi Diri</th>
                         <th class="px-4 py-3 border border-gray-300">Pengakuan Iman</th>
                         <th class="px-4 py-3 border border-gray-300">Bacaan Alkitab</th>
                         <th class="px-4 py-3 border border-gray-300">Content</th>
-                        <th class="px-4 py-3 border border-gray-300">Tanggal</th>
                         <th class="px-4 py-3 border border-gray-300 rounded-tr-lg">Aksi</th>
                     </tr>
                 </thead>
@@ -70,11 +73,39 @@
                         <tr class="divide-x divide-gray-300 hover:bg-gray-50 {{ $loop->even ? 'bg-gray-50' : 'bg-white' }}">
                             <td class="px-4 py-3 border border-gray-300 text-center"></td>
                             <td class="px-4 py-3 font-medium text-gray-900 max-w-xs break-words">{{ $item->title }}</td>
+                            <td class="px-4 py-3 border border-gray-300">
+                                @if($item->status === 'published')
+                                    <span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">Published</span>
+                                @elseif($item->status === 'scheduled')
+                                    <span class="px-2 py-1 text-xs font-semibold text-yellow-800 bg-yellow-200 rounded-full">Scheduled</span>
+                                @else
+                                    <span class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-200 rounded-full">Draft</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 border border-gray-300 text-gray-600">
+                                @if($item->publish_at)
+                                    <div class="flex flex-col">
+                                        <span class="font-medium">{{ $item->publish_at->format('d M Y, H:i') }} WIB</span>
+                                        @if($item->status === 'scheduled')
+                                            <span class="text-xs text-blue-600 font-semibold countdown-timer" 
+                                                  data-publish="{{ $item->publish_at->timestamp }}"
+                                                  data-id="{{ $item->id }}">
+                                                ⏱️ Calculating...
+                                            </span>
+                                        @elseif($item->status === 'published')
+                                            <span class="text-xs text-green-600">
+                                                ✅ Published {{ $item->publish_at->diffForHumans() }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                @else
+                                    <span class="text-gray-400">-</span>
+                                @endif
+                            </td>
                             <td class="px-4 py-3 text-gray-700 max-w-md break-words">{!! Str::limit($item->refleksi_diri, 100) !!}</td>
                             <td class="px-4 py-3 text-gray-700 max-w-md break-words">{!! Str::limit($item->pengakuan_iman, 100) !!}</td>
                             <td class="px-4 py-3 text-gray-700 max-w-md break-words">{!! Str::limit($item->bacaan_alkitab, 100) !!}</td>
                             <td class="px-4 py-3 text-gray-700 max-w-md break-words">{!! Str::limit($item->content, 100) !!}</td>
-                            <td class="px-4 py-3 border border-gray-300 text-gray-600">{{ $item->created_at->format('d M Y') }}</td>
                             <td class="px-4 py-3 border border-gray-300 space-x-2">
                                 <button onclick="openEditModal('{{ $item->id }}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-sm">Edit</button>
                                 <form action="{{ route('admin.resourcefile.destroy', $item->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Yakin mau hapus?')">
@@ -100,10 +131,11 @@
                                         <div id="edit-title-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
                                     </div>
 
-                                    {{-- Tanggal --}}
+                                    {{-- Tanggal Publish --}}
                                     <div class="mb-4">
-                                        <label class="block text-sm font-medium mb-2">Tanggal <span class="text-red-500">*</span></label>
-                                        <input type="date" name="tanggal" id="edit-tanggal-{{ $item->id }}" class="w-full border rounded p-2" value="{{ old('tanggal', $item->created_at->format('Y-m-d')) }}">
+                                        <label class="block text-sm font-medium mb-2">Tanggal Publish <span class="text-red-500">*</span></label>
+                                        <input type="date" name="tanggal" id="edit-tanggal-{{ $item->id }}" class="w-full border rounded p-2" value="{{ old('tanggal', $item->publish_at ? $item->publish_at->format('Y-m-d') : '') }}">
+                                        <p class="text-xs text-gray-500 mt-1">📅 Post akan dipublish otomatis pada jam 00:00 WIB di tanggal yang dipilih</p>
                                         <div id="edit-tanggal-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
                                     </div>
 
@@ -166,10 +198,11 @@
                     </div>
                 </div>
 
-                {{-- Tanggal --}}
+                {{-- Tanggal Publish --}}
                 <div class="mb-4">
-                    <label class="block text-sm font-medium mb-2">Tanggal <span class="text-red-500">*</span></label>
-                    <input type="date" name="tanggal" id="create-tanggal" value="{{ old('tanggal') }}" class="w-full border rounded p-2">
+                    <label class="block text-sm font-medium mb-2">Tanggal Publish <span class="text-red-500">*</span></label>
+                    <input type="date" name="tanggal" id="create-tanggal" value="{{ old('tanggal', now('Asia/Jakarta')->format('Y-m-d')) }}" class="w-full border rounded p-2">
+                    <p class="text-xs text-gray-500 mt-1">📅 Post akan dipublish otomatis pada jam 00:00 WIB di tanggal yang dipilih</p>
                     <div id="create-tanggal-error" class="text-red-600 text-sm mt-1 hidden">
                         @error('tanggal')
                             {{ $message }}
@@ -236,32 +269,30 @@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 
+    {{-- Custom CSS for Countdown Timer --}}
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .countdown-timer {
+            transition: all 0.3s ease;
+        }
+        .countdown-timer:hover {
+            transform: scale(1.05);
+        }
+    </style>
+
     <script>
         let createEditors = {}, editEditors = {};
 
         $(document).ready(function () {
             // Initialize DataTable
             let table = $('#resourceTable').DataTable({
-                responsive: {
-                    breakpoints: [
-                        { name: 'desktop', width: Infinity },
-                        { name: 'tablet',  width: 1024 },
-                        { name: 'mobile',  width: 640 }
-                    ],
-                    details: {
-                        renderer: function ( api, rowIdx, columns ) {
-                            let data = $.map(columns, function (col) {
-                                return col.hidden
-                                    ? `<div class="flex flex-col sm:flex-row sm:items-start sm:gap-2 py-2 border-b">
-                                            <span class="font-bold text-gray-800 min-w-[100px]">${col.title} :</span>
-                                            <span class="text-gray-600 break-words">${col.data}</span>
-                                       </div>`
-                                    : '';
-                            }).join('');
-                            return data ? $('<div class="p-3"/>').append(data) : false;
-                        }
-                    }
-                },
+                responsive: true,
                 pageLength: 10,
                 lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Semua"] ],
                 language: {
@@ -274,7 +305,7 @@
                     emptyTable: "Belum ada data Good News."
                 },
                 columnDefs: [{ targets: 0, orderable: false, searchable: false }],
-                order: [[1, 'asc']]
+                order: [[3, 'desc']] // Sort by publish date
             });
 
             // Reindex nomor urut
@@ -284,19 +315,14 @@
                 });
             }).draw();
 
-            // Auto open modal jika ada validation error
             @if($errors->any())
                 openModal('createModal');
             @endif
 
-            // Initialize CKEditor for create modal
             initializeCreateEditors();
-
-            // Setup form validation
             setupFormValidation();
         });
 
-        // Initialize CKEditor for create modal
         function initializeCreateEditors() {
             const createFields = ['refleksi_diri', 'pengakuan_iman', 'bacaan_alkitab', 'content'];
             
@@ -305,23 +331,15 @@
                 const element = document.querySelector(`#${elementId}`);
                 
                 if (element) {
-                    ClassicEditor
-                        .create(element, getEditorConfig())
-                        .then(editor => {
-                            createEditors[field] = editor;
-                        })
-                        .catch(error => {
-                            console.error(`CKEditor initialization failed for ${elementId}:`, error);
-                        });
+                    ClassicEditor.create(element, getEditorConfig())
+                        .then(editor => { createEditors[field] = editor; })
+                        .catch(error => { console.error(`CKEditor init failed for ${elementId}:`, error); });
                 }
             });
         }
 
-        // Initialize CKEditor for edit modal
         function initializeEditEditors(itemId) {
-            if (editEditors[itemId]) {
-                return; // Already initialized
-            }
+            if (editEditors[itemId]) return;
 
             editEditors[itemId] = {};
             const editFields = ['refleksi_diri', 'pengakuan_iman', 'bacaan_alkitab', 'content'];
@@ -331,59 +349,28 @@
                 const element = document.querySelector(`#${elementId}`);
                 
                 if (element) {
-                    ClassicEditor
-                        .create(element, getEditorConfig())
-                        .then(editor => {
-                            editEditors[itemId][field] = editor;
-                        })
-                        .catch(error => {
-                            console.error(`CKEditor initialization failed for ${elementId}:`, error);
-                        });
+                    ClassicEditor.create(element, getEditorConfig())
+                        .then(editor => { editEditors[itemId][field] = editor; })
+                        .catch(error => { console.error(`CKEditor init failed for ${elementId}:`, error); });
                 }
             });
         }
 
-        // CKEditor configuration
         function getEditorConfig() {
             return {
                 toolbar: {
-                    items: [
-                        'heading',
-                        '|',
-                        'bold',
-                        'italic',
-                        'link',
-                        'bulletedList',
-                        'numberedList',
-                        '|',
-                        'outdent',
-                        'indent',
-                        '|',
-                        'blockQuote',
-                        'insertTable',
-                        'undo',
-                        'redo'
-                    ]
+                    items: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|', 'outdent', 'indent', '|', 'blockQuote', 'insertTable', 'undo', 'redo']
                 },
                 language: 'id',
-                table: {
-                    contentToolbar: [
-                        'tableColumn',
-                        'tableRow',
-                        'mergeTableCells'
-                    ]
-                }
+                table: { contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells'] }
             };
         }
 
-        // Form validation setup
         function setupFormValidation() {
-            // Create form validation
             $('#create-form').on('submit', function(e) {
                 let isValid = true;
                 clearErrors('create');
 
-                // Title validation
                 const title = $('#create-title').val().trim();
                 if (!title) {
                     showError('create-title-error', 'Title harus diisi');
@@ -396,14 +383,12 @@
                     isValid = false;
                 }
 
-                // Tanggal validation
                 const tanggal = $('#create-tanggal').val();
                 if (!tanggal) {
-                    showError('create-tanggal-error', 'Tanggal harus diisi');
+                    showError('create-tanggal-error', 'Tanggal publish harus diisi');
                     isValid = false;
                 }
 
-                // Required fields validation
                 const requiredFields = ['refleksi_diri', 'pengakuan_iman', 'bacaan_alkitab', 'content'];
                 requiredFields.forEach(field => {
                     const content = createEditors[field] ? createEditors[field].getData().trim() : '';
@@ -418,18 +403,14 @@
                     }
                 });
 
-                if (!isValid) {
-                    e.preventDefault();
-                }
+                if (!isValid) e.preventDefault();
             });
 
-            // Edit form validation
             $('[id^="edit-form-"]').on('submit', function(e) {
                 const itemId = this.id.split('-')[2];
                 let isValid = true;
                 clearErrors('edit', itemId);
 
-                // Title validation
                 const title = $(`#edit-title-${itemId}`).val().trim();
                 if (!title) {
                     showError(`edit-title-error-${itemId}`, 'Title harus diisi');
@@ -442,14 +423,12 @@
                     isValid = false;
                 }
 
-                // Tanggal validation
                 const tanggal = $(`#edit-tanggal-${itemId}`).val();
                 if (!tanggal) {
-                    showError(`edit-tanggal-error-${itemId}`, 'Tanggal harus diisi');
+                    showError(`edit-tanggal-error-${itemId}`, 'Tanggal publish harus diisi');
                     isValid = false;
                 }
 
-                // Required fields validation
                 const requiredFields = ['refleksi_diri', 'pengakuan_iman', 'bacaan_alkitab', 'content'];
                 requiredFields.forEach(field => {
                     const content = editEditors[itemId] && editEditors[itemId][field] 
@@ -466,25 +445,18 @@
                     }
                 });
 
-                if (!isValid) {
-                    e.preventDefault();
-                }
+                if (!isValid) e.preventDefault();
             });
         }
 
-        // Utility functions
         function showError(elementId, message) {
             const errorElement = document.getElementById(elementId);
             if (errorElement) {
                 errorElement.textContent = message;
                 errorElement.classList.remove('hidden');
-                
-                // Add red border to input
                 const inputId = elementId.replace('-error', '');
                 const inputElement = document.getElementById(inputId);
-                if (inputElement) {
-                    inputElement.classList.add('border-red-500');
-                }
+                if (inputElement) inputElement.classList.add('border-red-500');
             }
         }
 
@@ -499,13 +471,9 @@
                     errorElement.classList.add('hidden');
                     errorElement.textContent = '';
                 }
-                
-                // Remove red border
                 const inputId = `${type}-${field}${suffix}`;
                 const inputElement = document.getElementById(inputId);
-                if (inputElement) {
-                    inputElement.classList.remove('border-red-500');
-                }
+                if (inputElement) inputElement.classList.remove('border-red-500');
             });
         }
 
@@ -514,13 +482,10 @@
             clearErrors('create');
             
             if (id === 'createModal') {
-                // Reset form
                 document.getElementById('create-form').reset();
-                // Clear CKEditor content
+                document.getElementById('create-tanggal').value = new Date().toISOString().split('T')[0];
                 Object.keys(createEditors).forEach(field => {
-                    if (createEditors[field]) {
-                        createEditors[field].setData('');
-                    }
+                    if (createEditors[field]) createEditors[field].setData('');
                 });
             }
         }
@@ -529,14 +494,11 @@
             const modalId = `editModal-${itemId}`;
             document.getElementById(modalId).classList.remove('hidden');
             clearErrors('edit', itemId);
-            
-            // Initialize CKEditor for this edit modal if not already initialized
             initializeEditEditors(itemId);
         }
 
         function closeModal(id) {
             document.getElementById(id).classList.add('hidden');
-            
             if (id === 'createModal') {
                 clearErrors('create');
             } else if (id.startsWith('editModal-')) {
@@ -545,7 +507,6 @@
             }
         }
 
-        // Auto hide flash message
         setTimeout(() => {
             let flash = document.getElementById('flash-message');
             if (flash) {
@@ -554,33 +515,68 @@
             }
         }, 3000);
 
-        // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-                // Close any open modals
-                const modals = ['createModal'];
-                modals.forEach(modalId => {
+                ['createModal'].forEach(modalId => {
                     const modal = document.getElementById(modalId);
-                    if (modal && !modal.classList.contains('hidden')) {
-                        closeModal(modalId);
-                    }
+                    if (modal && !modal.classList.contains('hidden')) closeModal(modalId);
                 });
-                
-                // Close edit modals
-                const editModals = document.querySelectorAll('[id^="editModal-"]');
-                editModals.forEach(modal => {
-                    if (!modal.classList.contains('hidden')) {
-                        closeModal(modal.id);
-                    }
+                document.querySelectorAll('[id^="editModal-"]').forEach(modal => {
+                    if (!modal.classList.contains('hidden')) closeModal(modal.id);
                 });
             }
         });
 
-        // Show existing validation errors on page load
-        @if($errors->any())
-            @foreach($errors->all() as $error)
-                console.log('Validation error: {{ $error }}');
-            @endforeach
-        @endif
+        // ============================================
+        // COUNTDOWN TIMER FOR SCHEDULED POSTS
+        // ============================================
+        function updateCountdownTimers() {
+            const timers = document.querySelectorAll('.countdown-timer');
+            const now = Math.floor(Date.now() / 1000); // Current timestamp in seconds
+
+            timers.forEach(timer => {
+                const publishTimestamp = parseInt(timer.getAttribute('data-publish'));
+                const diff = publishTimestamp - now;
+
+                if (diff <= 0) {
+                    // Time's up! Refresh page to update status
+                    timer.innerHTML = '🔄 Publishing now...';
+                    timer.classList.remove('text-blue-600');
+                    timer.classList.add('text-green-600', 'animate-pulse');
+                    
+                    // Refresh page after 3 seconds
+                    setTimeout(() => {
+                        location.reload();
+                    }, 3000);
+                } else {
+                    // Calculate time remaining
+                    const days = Math.floor(diff / 86400);
+                    const hours = Math.floor((diff % 86400) / 3600);
+                    const minutes = Math.floor((diff % 3600) / 60);
+                    const seconds = diff % 60;
+
+                    let timeString = '⏱️ ';
+                    
+                    if (days > 0) {
+                        timeString += `${days} hari ${hours} jam lagi`;
+                    } else if (hours > 0) {
+                        timeString += `${hours} jam ${minutes} menit lagi`;
+                    } else if (minutes > 0) {
+                        timeString += `${minutes} menit ${seconds} detik lagi`;
+                    } else {
+                        timeString += `${seconds} detik lagi`;
+                        timer.classList.add('animate-pulse', 'font-bold');
+                    }
+
+                    timer.innerHTML = timeString;
+                }
+            });
+        }
+
+        // Update countdown every second
+        if (document.querySelectorAll('.countdown-timer').length > 0) {
+            updateCountdownTimers(); // Initial update
+            setInterval(updateCountdownTimers, 1000); // Update every second
+        }
     </script>
 </x-app-layout>
