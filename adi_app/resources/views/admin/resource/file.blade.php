@@ -44,7 +44,7 @@
 
         {{-- Header --}}
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold">📄 Good News</h1>
+            <h1 class="text-2xl font-bold">Good News</h1>
             <button onclick="openModal('createModal')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow">
                 + Tambah Resource
             </button>
@@ -61,7 +61,7 @@
                         <th class="px-4 py-3 border border-gray-300">Pengakuan Iman</th>
                         <th class="px-4 py-3 border border-gray-300">Bacaan Alkitab</th>
                         <th class="px-4 py-3 border border-gray-300">Content</th>
-                        <th class="px-4 py-3 border border-gray-300">Created At</th>
+                        <th class="px-4 py-3 border border-gray-300">Tanggal</th>
                         <th class="px-4 py-3 border border-gray-300 rounded-tr-lg">Aksi</th>
                     </tr>
                 </thead>
@@ -98,6 +98,13 @@
                                         <label class="block text-sm font-medium mb-2">Title <span class="text-red-500">*</span></label>
                                         <input type="text" name="title" id="edit-title-{{ $item->id }}" class="w-full border rounded p-2" value="{{ old('title', $item->title) }}">
                                         <div id="edit-title-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
+                                    </div>
+
+                                    {{-- Tanggal --}}
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium mb-2">Tanggal <span class="text-red-500">*</span></label>
+                                        <input type="date" name="tanggal" id="edit-tanggal-{{ $item->id }}" class="w-full border rounded p-2" value="{{ old('tanggal', $item->created_at->format('Y-m-d')) }}">
+                                        <div id="edit-tanggal-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
                                     </div>
 
                                     {{-- Content --}}
@@ -154,6 +161,17 @@
                     <input type="text" name="title" id="create-title" value="{{ old('title') }}" class="w-full border rounded p-2">
                     <div id="create-title-error" class="text-red-600 text-sm mt-1 hidden">
                         @error('title')
+                            {{ $message }}
+                        @enderror
+                    </div>
+                </div>
+
+                {{-- Tanggal --}}
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Tanggal <span class="text-red-500">*</span></label>
+                    <input type="date" name="tanggal" id="create-tanggal" value="{{ old('tanggal') }}" class="w-full border rounded p-2">
+                    <div id="create-tanggal-error" class="text-red-600 text-sm mt-1 hidden">
+                        @error('tanggal')
                             {{ $message }}
                         @enderror
                     </div>
@@ -378,6 +396,13 @@
                     isValid = false;
                 }
 
+                // Tanggal validation
+                const tanggal = $('#create-tanggal').val();
+                if (!tanggal) {
+                    showError('create-tanggal-error', 'Tanggal harus diisi');
+                    isValid = false;
+                }
+
                 // Required fields validation
                 const requiredFields = ['refleksi_diri', 'pengakuan_iman', 'bacaan_alkitab', 'content'];
                 requiredFields.forEach(field => {
@@ -414,6 +439,13 @@
                     isValid = false;
                 } else if (title.length > 255) {
                     showError(`edit-title-error-${itemId}`, 'Title maksimal 255 karakter');
+                    isValid = false;
+                }
+
+                // Tanggal validation
+                const tanggal = $(`#edit-tanggal-${itemId}`).val();
+                if (!tanggal) {
+                    showError(`edit-tanggal-error-${itemId}`, 'Tanggal harus diisi');
                     isValid = false;
                 }
 
@@ -458,7 +490,7 @@
 
         function clearErrors(type, itemId = '') {
             const suffix = itemId ? `-${itemId}` : '';
-            const fields = ['title', 'refleksi_diri', 'pengakuan_iman', 'bacaan_alkitab', 'content'];
+            const fields = ['title', 'tanggal', 'refleksi_diri', 'pengakuan_iman', 'bacaan_alkitab', 'content'];
             
             fields.forEach(field => {
                 const errorId = `${type}-${field}-error${suffix}`;

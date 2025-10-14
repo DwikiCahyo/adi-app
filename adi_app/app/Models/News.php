@@ -67,6 +67,7 @@ class News extends Model
 
     public function images() { return $this->hasMany(NewsImage::class, 'news_id'); }
     public function topics() { return $this->hasMany(NewsTopic::class, 'news_id'); }
+    
 
     // scopes
     public function scopeActive($query) { return $query->whereNull('deleted_at'); }
