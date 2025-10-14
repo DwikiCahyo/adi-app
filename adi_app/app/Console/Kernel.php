@@ -10,9 +10,20 @@ class Kernel extends ConsoleKernel
     /**
      * Define the application's command schedule.
      */
-    protected function schedule(Schedule $schedule): void
-    {
-        // $schedule->command('inspire')->hourly();
+    protected function schedule(Schedule $schedule): void{
+        // Auto-publish scheduled resource files (Good News)
+        $schedule->command('resourcefile:publish-scheduled')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/scheduled-publish.log'));
+        
+        // Auto-publish scheduled resources (Latest Sermon)
+        $schedule->command('resource:publish-scheduled')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/scheduled-publish.log'));
     }
 
     /**

@@ -9,7 +9,7 @@
             
             <div class="block relative aspect-video overflow-hidden">
                 <img 
-                    src="{{ asset('Images/latestsermon.png') }}" 
+                    src="{{ asset('Images/latestsermons.png') }}" 
                     alt="Latest Sermon" 
                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 >
@@ -20,7 +20,7 @@
             {{-- Content --}}
             <div class="p-6 flex flex-col flex-1">
                 <p class="text-gray-800 font-semibold text-lg leading-snug mb-4 group-hover:text-gray-900 transition-colors">
-                    Kumpulan khotbah ini akan menolong kita untuk mendapatkan pengertian yang lebih baik akan Firman Tuhan, serta mengingatkan kita akan prinsip-prinsip kebenaran yang perlu diterapkan didalam kehidupan.
+                    Khotbah-khotbah ini akan menolong kita untuk lebih memahami firman Tuhan dan menggingatkan kita untuk menerapkannya di dalam kehidupan sehari-hari.
                 </p>
                 <span class="text-red-600 font-bold group-hover:text-red-700 group-hover:underline mt-auto transition-colors">
                     WATCH NOW
@@ -33,7 +33,7 @@
             
             <div class="block relative aspect-video overflow-hidden">
                 <img 
-                    src="{{ asset('Images/GoodNews.png') }}" 
+                    src="{{ asset('Images/GoodNews1.png') }}" 
                     alt="Good News" 
                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 >
@@ -44,7 +44,7 @@
             {{-- Content --}}
             <div class="p-6 flex flex-col flex-1">
                 <p class="text-gray-800 font-semibold text-lg leading-snug mb-4 group-hover:text-gray-900 transition-colors">
-                    Mulai harimu dengan Firman Tuhan! Renungan harian ini akan menuntun kita untuk mengalami perjumpaan dengan kebenaran sehingga kita dipimpin oleh hikmat Tuhan dalam menjalani kehidupan sehari-hari.
+                    Mulailah harimu dengan firman Tuhan. Renungan firman Tuhan dalam Good News akan menolong kita menggalami kebenarannya yang akan mengubahkan kita semakin serupa Kristus.
                 </p>
                 <span class="text-red-600 font-bold group-hover:text-red-700 group-hover:underline mt-auto transition-colors">
                     FIND OUT MORE

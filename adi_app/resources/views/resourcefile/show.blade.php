@@ -19,13 +19,13 @@
 
     {{-- Archive List --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        @forelse($archives as $item)
+        @forelse($resourcefile as $item)
             <a href="{{ route('resourcefile.showfile', $item->id) }}" 
                class="block bg-white shadow rounded-xl p-4 sm:p-5 md:p-6 hover:shadow-lg hover:-translate-y-1 transition transform">
                 
                 {{-- Tanggal --}}
                 <p class="text-xs sm:text-sm text-gray-500 mb-2">
-                    {{ $item->created_at?->translatedFormat('d F Y') }}
+                    {{ $item->publish_at?->translatedFormat('d F Y') }}
                 </p>
 
                 {{-- Judul --}}

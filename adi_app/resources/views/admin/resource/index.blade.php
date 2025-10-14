@@ -76,9 +76,10 @@
                     <tr class="divide-x divide-gray-300">
                         <th class="px-4 py-3 border border-gray-300 rounded-tl-lg">ID</th>
                         <th class="px-4 py-3 border border-gray-300">Title</th>
+                        <th class="px-4 py-3 border border-gray-300">Status</th>
+                        <th class="px-4 py-3 border border-gray-300">Tanggal Publish</th>
                         <th class="px-4 py-3 border border-gray-300">Content</th>
                         <th class="px-4 py-3 border border-gray-300">Thumbnail</th>
-                        <th class="px-4 py-3 border border-gray-300">Created At</th>
                         <th class="px-4 py-3 border border-gray-300 rounded-tr-lg">Aksi</th>
                     </tr>
                 </thead>
@@ -86,10 +87,39 @@
                     @foreach($resource as $item)
                         <tr class="divide-x divide-gray-300 hover:bg-gray-50 {{ $loop->even ? 'bg-gray-50' : 'bg-white' }}">
                             <td class="px-4 py-3 border border-gray-300 text-center"></td>
-                            <td class="px-4 py-3 font-medium text-gray-900 whitespace-normal break-words max-w-xs">
+                            <td class="px-4 py-3 font-medium text-gray-900 max-w-xs break-words">
                                 {{ $item->title }}
                             </td>
-                            <td class="px-4 py-3 text-gray-700 whitespace-normal break-words max-w-md">
+                            <td class="px-4 py-3 border border-gray-300">
+                                @if($item->status === 'published')
+                                    <span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">Published</span>
+                                @elseif($item->status === 'scheduled')
+                                    <span class="px-2 py-1 text-xs font-semibold text-yellow-800 bg-yellow-200 rounded-full">Scheduled</span>
+                                @else
+                                    <span class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-200 rounded-full">Draft</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 border border-gray-300 text-gray-600">
+                                @if($item->publish_at)
+                                    <div class="flex flex-col">
+                                        <span class="font-medium">{{ $item->publish_at->format('d M Y, H:i') }} WIB</span>
+                                        @if($item->status === 'scheduled')
+                                            <span class="text-xs text-blue-600 font-semibold countdown-timer" 
+                                                  data-publish="{{ $item->publish_at->timestamp }}"
+                                                  data-id="{{ $item->id }}">
+                                                ⏱️ Calculating...
+                                            </span>
+                                        @elseif($item->status === 'published')
+                                            <span class="text-xs text-green-600">
+                                                ✅ Published {{ $item->publish_at->diffForHumans() }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                @else
+                                    <span class="text-gray-400">-</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-gray-700 max-w-md break-words">
                                 {!! Str::limit($item->content, 200) !!}
                             </td>
                             <td class="px-4 py-3 border border-gray-300">
@@ -98,9 +128,6 @@
                                 @else
                                     <span class="text-gray-400 italic">Gambar tidak tersedia</span>
                                 @endif
-                            </td>
-                            <td class="px-4 py-3 border border-gray-300 text-gray-600">
-                                {{ $item->created_at->format('d M Y') }}
                             </td>
                             <td class="px-4 py-3 border border-gray-300 space-x-2">
                                 <button onclick="openEditModal('{{ $item->id }}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-sm">Edit</button>
@@ -125,6 +152,13 @@
                                         <input type="text" name="title" id="edit-title-{{ $item->id }}" value="{{ old('title', $item->title) }}" class="w-full border rounded p-2">
                                         <div id="edit-title-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
                                     </div>
+
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium mb-2">Tanggal Publish <span class="text-red-500">*</span></label>
+                                        <input type="date" name="tanggal" id="edit-tanggal-{{ $item->id }}" value="{{ old('tanggal', $item->publish_at ? $item->publish_at->format('Y-m-d') : '') }}" class="w-full border rounded p-2">
+                                        <p class="text-xs text-gray-500 mt-1">📅 Pilih hari ini untuk publish sekarang, atau pilih tanggal lain untuk publish jam 00:00 WIB</p>
+                                        <div id="edit-tanggal-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
+                                    </div>
                                     
                                     <div class="mb-4">
                                         <label class="block text-sm font-medium mb-2">Content <span class="text-red-500">*</span></label>
@@ -133,8 +167,8 @@
                                     </div>
                                     
                                     <div class="mb-4">
-                                        <label class="block text-sm font-medium mb-2">URL Thumbnail <span class="text-red-500">*</span></label>
-                                        <input type="text" name="url" id="edit-url-{{ $item->id }}" value="{{ old('url', $item->url) }}" class="w-full border rounded p-2" placeholder="https://example.com/image.jpg">
+                                        <label class="block text-sm font-medium mb-2">URL Video/Thumbnail <span class="text-red-500">*</span></label>
+                                        <input type="text" name="url" id="edit-url-{{ $item->id }}" value="{{ old('url', $item->url) }}" class="w-full border rounded p-2" placeholder="https://youtube.com/watch?v=...">
                                         <div id="edit-url-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
                                         @if($item->thumbnail_url)
                                             <div class="mt-2">
@@ -173,6 +207,17 @@
                         @enderror
                     </div>
                 </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Tanggal Publish <span class="text-red-500">*</span></label>
+                    <input type="date" name="tanggal" id="create-tanggal" value="{{ old('tanggal', now('Asia/Jakarta')->format('Y-m-d')) }}" class="w-full border rounded p-2">
+                    <p class="text-xs text-gray-500 mt-1">📅 Pilih hari ini untuk publish sekarang, atau pilih tanggal lain untuk publish jam 00:00 WIB</p>
+                    <div id="create-tanggal-error" class="text-red-600 text-sm mt-1 hidden">
+                        @error('tanggal')
+                            {{ $message }}
+                        @enderror
+                    </div>
+                </div>
                 
                 <div class="mb-4">
                     <label class="block text-sm font-medium mb-2">Content <span class="text-red-500">*</span></label>
@@ -184,16 +229,16 @@
                     </div>
                 </div>
                 
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium mb-2">URL Thumbnail <span class="text-red-500">*</span></label>
-                        <input type="text" name="url" id="create-url" value="{{ old('url') }}" class="w-full border rounded p-2" placeholder="https://youtube.com/watch?v=... atau https://example.com/image.jpg">
-                        <p class="text-xs text-gray-500 mt-1">Masukkan URL YouTube atau URL gambar yang valid untuk thumbnail</p>
-                        <div id="create-url-error" class="text-red-600 text-sm mt-1 hidden">
-                            @error('url')
-                                {{ $message }}
-                            @enderror
-                        </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">URL Video/Thumbnail <span class="text-red-500">*</span></label>
+                    <input type="text" name="url" id="create-url" value="{{ old('url') }}" class="w-full border rounded p-2" placeholder="https://youtube.com/watch?v=... atau https://example.com/image.jpg">
+                    <p class="text-xs text-gray-500 mt-1">Masukkan URL YouTube atau URL gambar yang valid untuk thumbnail</p>
+                    <div id="create-url-error" class="text-red-600 text-sm mt-1 hidden">
+                        @error('url')
+                            {{ $message }}
+                        @enderror
                     </div>
+                </div>
                 
                 <div class="flex justify-end space-x-2 mt-4">
                     <button type="button" onclick="closeModal('createModal')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
@@ -210,32 +255,30 @@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 
+    {{-- Custom CSS for Countdown Timer --}}
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .countdown-timer {
+            transition: all 0.3s ease;
+        }
+        .countdown-timer:hover {
+            transform: scale(1.05);
+        }
+    </style>
+
     <script>
         let createEditor, editEditors = {};
 
         $(document).ready(function () {
             // Initialize DataTable
             let table = $('#resourceTable').DataTable({
-                responsive: {
-                    breakpoints: [
-                        { name: 'desktop', width: Infinity },
-                        { name: 'tablet',  width: 1024 },
-                        { name: 'mobile',  width: 640 }
-                    ],
-                    details: {
-                        renderer: function ( api, rowIdx, columns ) {
-                            let data = $.map(columns, function (col) {
-                                return col.hidden
-                                    ? `<div class="flex flex-col sm:flex-row sm:items-start sm:gap-2 py-2 border-b">
-                                            <span class="font-bold text-gray-800 min-w-[100px]">${col.title} :</span>
-                                            <span class="text-gray-600 break-words">${col.data}</span>
-                                       </div>`
-                                    : '';
-                            }).join('');
-                            return data ? $('<div class="p-3"/>').append(data) : false;
-                        }
-                    }
-                },
+                responsive: true,
                 pageLength: 10,
                 lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Semua"] ],
                 language: {
@@ -248,7 +291,7 @@
                     emptyTable: "Belum ada data Latest Sermon."
                 },
                 columnDefs: [{ targets: 0, orderable: false, searchable: false }],
-                order: [[1, 'asc']]
+                order: [[3, 'desc']] // Sort by publish date
             });
 
             // Reindex nomor urut
@@ -256,112 +299,47 @@
                 table.column(0, { search: 'applied', order: 'applied' }).nodes().each((cell, i) => cell.innerHTML = i + 1);
             }).draw();
 
-            // Auto open modal jika ada validation error
             @if($errors->any())
                 openModal('createModal');
             @endif
 
-            // Initialize CKEditor for create modal
             initializeCreateEditor();
-
-            // Setup form validation
             setupFormValidation();
         });
 
-        // Initialize CKEditor for create modal
         function initializeCreateEditor() {
             ClassicEditor
                 .create(document.querySelector('#create-content'), {
                     toolbar: {
-                        items: [
-                            'heading',
-                            '|',
-                            'bold',
-                            'italic',
-                            'link',
-                            'bulletedList',
-                            'numberedList',
-                            '|',
-                            'outdent',
-                            'indent',
-                            '|',
-                            'blockQuote',
-                            'insertTable',
-                            'mediaEmbed',
-                            'undo',
-                            'redo'
-                        ]
+                        items: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|', 'outdent', 'indent', '|', 'blockQuote', 'insertTable', 'mediaEmbed', 'undo', 'redo']
                     },
                     language: 'id',
-                    table: {
-                        contentToolbar: [
-                            'tableColumn',
-                            'tableRow',
-                            'mergeTableCells'
-                        ]
-                    }
+                    table: { contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells'] }
                 })
-                .then(editor => {
-                    createEditor = editor;
-                })
-                .catch(error => {
-                    console.error('CKEditor initialization failed:', error);
-                });
+                .then(editor => { createEditor = editor; })
+                .catch(error => { console.error('CKEditor init failed:', error); });
         }
 
-        // Initialize CKEditor for edit modal
         function initializeEditEditor(itemId) {
-            if (editEditors[itemId]) {
-                return; // Editor already initialized
-            }
+            if (editEditors[itemId]) return;
 
             ClassicEditor
                 .create(document.querySelector(`#edit-content-${itemId}`), {
                     toolbar: {
-                        items: [
-                            'heading',
-                            '|',
-                            'bold',
-                            'italic',
-                            'link',
-                            'bulletedList',
-                            'numberedList',
-                            '|',
-                            'outdent',
-                            'indent',
-                            '|',
-                            'blockQuote',
-                            'insertTable',
-                            'mediaEmbed',
-                            'undo',
-                            'redo'
-                        ]
+                        items: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|', 'outdent', 'indent', '|', 'blockQuote', 'insertTable', 'mediaEmbed', 'undo', 'redo']
                     },
                     language: 'id',
-                    table: {
-                        contentToolbar: [
-                            'tableColumn',
-                            'tableRow',
-                            'mergeTableCells'
-                        ]
-                    }
+                    table: { contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells'] }
                 })
-                .then(editor => {
-                    editEditors[itemId] = editor;
-                })
-                .catch(error => {
-                    console.error(`CKEditor initialization failed for edit-${itemId}:`, error);
-                });
+                .then(editor => { editEditors[itemId] = editor; })
+                .catch(error => { console.error(`CKEditor init failed for edit-${itemId}:`, error); });
         }
 
-        // Form validation setup
         function setupFormValidation() {
-            // Create form validation
             $('#create-form').on('submit', function(e) {
                 let isValid = true;
                 clearErrors('create');
 
-                // Title validation
                 const title = $('#create-title').val().trim();
                 if (!title) {
                     showError('create-title-error', 'Title harus diisi');
@@ -374,7 +352,12 @@
                     isValid = false;
                 }
 
-                // Content validation
+                const tanggal = $('#create-tanggal').val();
+                if (!tanggal) {
+                    showError('create-tanggal-error', 'Tanggal publish harus diisi');
+                    isValid = false;
+                }
+
                 const content = createEditor ? createEditor.getData().trim() : '';
                 if (!content || content === '<p>&nbsp;</p>' || content === '<p></p>') {
                     showError('create-content-error', 'Content harus diisi');
@@ -384,31 +367,23 @@
                     isValid = false;
                 }
 
-                // URL validation
                 const url = $('#create-url').val().trim();
                 if (!url) {
-                    showError('create-url-error', 'URL Thumbnail harus diisi');
+                    showError('create-url-error', 'URL harus diisi');
                     isValid = false;
                 } else if (!isValidUrl(url)) {
-                    showError('create-url-error', 'URL harus berupa alamat yang valid (contoh: https://youtube.com/watch?v=... atau https://example.com/image.jpg)');
-                    isValid = false;
-                } else if (!isValidThumbnailUrl(url)) {
-                    showError('create-url-error', 'URL harus mengarah ke YouTube atau file gambar (jpg, jpeg, png, gif, webp)');
+                    showError('create-url-error', 'URL harus berupa alamat yang valid');
                     isValid = false;
                 }
 
-                if (!isValid) {
-                    e.preventDefault();
-                }
+                if (!isValid) e.preventDefault();
             });
 
-            // Edit form validation
             $('[id^="edit-form-"]').on('submit', function(e) {
                 const itemId = this.id.split('-')[2];
                 let isValid = true;
                 clearErrors('edit', itemId);
 
-                // Title validation
                 const title = $(`#edit-title-${itemId}`).val().trim();
                 if (!title) {
                     showError(`edit-title-error-${itemId}`, 'Title harus diisi');
@@ -421,7 +396,12 @@
                     isValid = false;
                 }
 
-                // Content validation
+                const tanggal = $(`#edit-tanggal-${itemId}`).val();
+                if (!tanggal) {
+                    showError(`edit-tanggal-error-${itemId}`, 'Tanggal publish harus diisi');
+                    isValid = false;
+                }
+
                 const content = editEditors[itemId] ? editEditors[itemId].getData().trim() : '';
                 if (!content || content === '<p>&nbsp;</p>' || content === '<p></p>') {
                     showError(`edit-content-error-${itemId}`, 'Content harus diisi');
@@ -431,44 +411,33 @@
                     isValid = false;
                 }
 
-                // URL validation
                 const url = $(`#edit-url-${itemId}`).val().trim();
                 if (!url) {
-                    showError(`edit-url-error-${itemId}`, 'URL Thumbnail harus diisi');
+                    showError(`edit-url-error-${itemId}`, 'URL harus diisi');
                     isValid = false;
                 } else if (!isValidUrl(url)) {
-                    showError(`edit-url-error-${itemId}`, 'URL harus berupa alamat yang valid (contoh: https://youtube.com/watch?v=... atau https://example.com/image.jpg)');
-                    isValid = false;
-                } else if (!isValidThumbnailUrl(url)) {
-                    showError(`edit-url-error-${itemId}`, 'URL harus mengarah ke YouTube atau file gambar (jpg, jpeg, png, gif, webp)');
+                    showError(`edit-url-error-${itemId}`, 'URL harus berupa alamat yang valid');
                     isValid = false;
                 }
 
-                if (!isValid) {
-                    e.preventDefault();
-                }
+                if (!isValid) e.preventDefault();
             });
         }
 
-        // Utility functions
         function showError(elementId, message) {
             const errorElement = document.getElementById(elementId);
             if (errorElement) {
                 errorElement.textContent = message;
                 errorElement.classList.remove('hidden');
-                
-                // Add red border to input
                 const inputId = elementId.replace('-error', '');
                 const inputElement = document.getElementById(inputId);
-                if (inputElement) {
-                    inputElement.classList.add('border-red-500');
-                }
+                if (inputElement) inputElement.classList.add('border-red-500');
             }
         }
 
         function clearErrors(type, itemId = '') {
             const suffix = itemId ? `-${itemId}` : '';
-            const fields = ['title', 'content', 'url'];
+            const fields = ['title', 'tanggal', 'content', 'url'];
             
             fields.forEach(field => {
                 const errorId = `${type}-${field}-error${suffix}`;
@@ -477,13 +446,9 @@
                     errorElement.classList.add('hidden');
                     errorElement.textContent = '';
                 }
-                
-                // Remove red border
                 const inputId = `${type}-${field}${suffix}`;
                 const inputElement = document.getElementById(inputId);
-                if (inputElement) {
-                    inputElement.classList.remove('border-red-500');
-                }
+                if (inputElement) inputElement.classList.remove('border-red-500');
             });
         }
 
@@ -496,28 +461,14 @@
             }
         }
 
-        function isValidThumbnailUrl(url) {
-            // Check for YouTube URLs
-            const youtubePattern = /^https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)/i;
-            if (youtubePattern.test(url)) {
-                return true;
-            }
-            
-            // Check for direct image URLs
-            const imagePattern = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i;
-            return imagePattern.test(url);
-        }
-
         function openModal(id) {
             document.getElementById(id).classList.remove('hidden');
             clearErrors('create');
             
             if (id === 'createModal') {
-                // Reset form
                 document.getElementById('create-form').reset();
-                if (createEditor) {
-                    createEditor.setData('');
-                }
+                document.getElementById('create-tanggal').value = new Date().toISOString().split('T')[0];
+                if (createEditor) createEditor.setData('');
             }
         }
 
@@ -525,14 +476,11 @@
             const modalId = `editModal-${itemId}`;
             document.getElementById(modalId).classList.remove('hidden');
             clearErrors('edit', itemId);
-            
-            // Initialize CKEditor for this edit modal if not already initialized
             initializeEditEditor(itemId);
         }
 
         function closeModal(id) {
             document.getElementById(id).classList.add('hidden');
-            
             if (id === 'createModal') {
                 clearErrors('create');
             } else if (id.startsWith('editModal-')) {
@@ -541,20 +489,70 @@
             }
         }
 
-        // Auto hide flash message
         setTimeout(() => {
             let flash = document.getElementById('flash-message');
             if (flash) {
-                flash.style.opacity = '0';
-                setTimeout(() => flash.remove(), 500);
+                flash.style.opacity = '0'; 
+                setTimeout(() => flash.remove(), 500); 
             }
         }, 3000);
 
-        // Show existing validation errors on page load
-        @if($errors->any())
-            @foreach($errors->all() as $error)
-                console.log('Validation error: {{ $error }}');
-            @endforeach
-        @endif
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                ['createModal'].forEach(modalId => {
+                    const modal = document.getElementById(modalId);
+                    if (modal && !modal.classList.contains('hidden')) closeModal(modalId);
+                });
+                document.querySelectorAll('[id^="editModal-"]').forEach(modal => {
+                    if (!modal.classList.contains('hidden')) closeModal(modal.id);
+                });
+            }
+        });
+
+        // ============================================
+        // COUNTDOWN TIMER FOR SCHEDULED POSTS
+        // ============================================
+        function updateCountdownTimers() {
+            const timers = document.querySelectorAll('.countdown-timer');
+            const now = Math.floor(Date.now() / 1000);
+
+            timers.forEach(timer => {
+                const publishTimestamp = parseInt(timer.getAttribute('data-publish'));
+                const diff = publishTimestamp - now;
+
+                if (diff <= 0) {
+                    timer.innerHTML = '🔄 Publishing now...';
+                    timer.classList.remove('text-blue-600');
+                    timer.classList.add('text-green-600', 'animate-pulse');
+                    
+                    setTimeout(() => { location.reload(); }, 3000);
+                } else {
+                    const days = Math.floor(diff / 86400);
+                    const hours = Math.floor((diff % 86400) / 3600);
+                    const minutes = Math.floor((diff % 3600) / 60);
+                    const seconds = diff % 60;
+
+                    let timeString = '⏱️ ';
+                    
+                    if (days > 0) {
+                        timeString += `${days} hari ${hours} jam lagi`;
+                    } else if (hours > 0) {
+                        timeString += `${hours} jam ${minutes} menit lagi`;
+                    } else if (minutes > 0) {
+                        timeString += `${minutes} menit ${seconds} detik lagi`;
+                    } else {
+                        timeString += `${seconds} detik lagi`;
+                        timer.classList.add('animate-pulse', 'font-bold');
+                    }
+
+                    timer.innerHTML = timeString;
+                }
+            });
+        }
+
+        if (document.querySelectorAll('.countdown-timer').length > 0) {
+            updateCountdownTimers();
+            setInterval(updateCountdownTimers, 1000);
+        }
     </script>
 </x-app-layout>
