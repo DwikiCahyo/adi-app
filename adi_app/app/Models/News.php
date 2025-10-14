@@ -66,7 +66,7 @@ class News extends Model
     public function deleter(): BelongsTo { return $this->belongsTo(User::class, 'deleted_by'); }
 
     public function images() { return $this->hasMany(NewsImage::class, 'news_id'); }
-    public function topics() { return $this->hasMany(NewsTopic::class, 'news_id'); }
+    // public function topics() { return $this->hasMany(NewsTopic::class, 'news_id'); }
     
 
     // scopes

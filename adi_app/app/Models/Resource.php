@@ -68,8 +68,8 @@ class Resource extends Model
     public function updater(): BelongsTo { return $this->belongsTo(User::class, 'updated_by'); }
     public function deleter(): BelongsTo { return $this->belongsTo(User::class, 'deleted_by'); }
 
-    public function images() { return $this->hasMany(ResourceImage::class, 'resource_id'); }
-    public function topics() { return $this->hasMany(ResourceTopic::class, 'resource_id'); }
+    // public function images() { return $this->hasMany(ResourceImage::class, 'resource_id'); }
+    // public function topics() { return $this->hasMany(ResourceTopic::class, 'resource_id'); }
 
     // Query Scopes
     public function scopeActive($query) { return $query->whereNull('deleted_at'); }
