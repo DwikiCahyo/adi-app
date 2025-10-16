@@ -55,8 +55,11 @@
                     </h3>
                     
                     @if($newsItem->content)
-                        <div class="text-gray-600 text-sm mb-4 line-clamp-3 flex-1">
+                        <div class="text-gray-600 text-sm line-clamp-3 flex-1">
                             {!! Str::limit(strip_tags($newsItem->content), 120) !!}
+                        </div>
+                        <div class="text-gray-600 text-sm mb-4 line-clamp-3 flex-1">
+                            {{$newsItem->publish_at?->translatedFormat('d F Y')}}
                         </div>
                     @endif
                     

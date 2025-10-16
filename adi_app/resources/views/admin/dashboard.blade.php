@@ -76,7 +76,7 @@
 
         {{-- Header --}}
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold">📰 Daftar News</h1>
+            <h1 class="text-2xl font-bold">📰 News Feed Management</h1>
             <button 
                 onclick="openModal('createModal')"
                 class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow"
@@ -92,10 +92,12 @@
                     <tr class="divide-x divide-gray-300">
                         <th class="px-4 py-3 border border-gray-300 rounded-tl-lg">ID</th>
                         <th class="px-4 py-3 border border-gray-300">Title</th>
+                        <th class="px-4 py-3 border border-gray-300">Status</th>
+                        <th class="px-4 py-3 border border-gray-300">Visibility</th>
+                        <th class="px-4 py-3 border border-gray-300">Tanggal Publish</th>
                         <th class="px-4 py-3 border border-gray-300">Content</th>
                         <th class="px-4 py-3 border border-gray-300">Thumbnail</th>
                         <th class="px-4 py-3 border border-gray-300">Images</th>
-                        <th class="px-4 py-3 border border-gray-300">Created At</th>
                         <th class="px-4 py-3 border border-gray-300 rounded-tr-lg">Aksi</th>
                     </tr>
                 </thead>
@@ -103,13 +105,82 @@
                     @foreach($news as $item)
                         <tr class="divide-x divide-gray-300 hover:bg-gray-50 {{ $loop->even ? 'bg-gray-50' : 'bg-white' }}">
                             <td class="px-4 py-3 border border-gray-300 text-center"></td>
-                            <td class="px-4 py-3 font-medium text-gray-900 whitespace-normal break-words max-w-xs">
+                            <td class="px-4 py-3 font-medium text-gray-900 max-w-xs break-words">
                                 {{ $item->title }}
                             </td>
-                            <td class="px-4 py-3 text-gray-700 whitespace-normal break-words max-w-md">
+                            
+                            {{-- Status Column --}}
+                            <td class="px-4 py-3 border border-gray-300">
+                                @if($item->status === 'published')
+                                    <span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">Published</span>
+                                @elseif($item->status === 'scheduled')
+                                    <span class="px-2 py-1 text-xs font-semibold text-yellow-800 bg-yellow-200 rounded-full">Scheduled</span>
+                                @else
+                                    <span class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-200 rounded-full">Draft</span>
+                                @endif
+                            </td>
+
+                            {{-- Visibility Column --}}
+                            <td class="px-4 py-3 border border-gray-300">
+                                @if($item->is_displayed_in_frontend)
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-2 py-1 text-xs font-semibold text-blue-800 bg-blue-200 rounded-full flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                                                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+                                            </svg>
+                                            Ditampilkan
+                                        </span>
+                                        <span class="text-xs text-blue-600 font-medium">Aktif</span>
+                                    </div>
+                                @elseif($item->status === 'published')
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-2 py-1 text-xs font-semibold text-gray-600 bg-gray-100 rounded-full flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"/>
+                                                <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z"/>
+                                            </svg>
+                                            Tidak Ditampilkan
+                                        </span>
+                                        <span class="text-xs text-gray-500">Tidak Aktif (Hanya bisa di lihat Admin)</span>
+                                    </div>
+                                @elseif($item->status === 'scheduled')
+                                    <span class="px-2 py-1 text-xs font-semibold text-purple-600 bg-purple-100 rounded-full">
+                                        ⏳ Akan Ditampilkan Nanti
+                                    </span>
+                                @else
+                                    <span class="px-2 py-1 text-xs font-semibold text-gray-400 bg-gray-50 rounded-full">
+                                        📝 Draft
+                                    </span>
+                                @endif
+                            </td>
+
+                            {{-- Tanggal Publish Column --}}
+                            <td class="px-4 py-3 border border-gray-300 text-gray-600">
+                                @if($item->publish_at)
+                                    <div class="flex flex-col">
+                                        <span class="font-medium">{{ $item->publish_at->format('d M Y, H:i') }} WIB</span>
+                                        @if($item->status === 'scheduled')
+                                            <span class="text-xs text-blue-600 font-semibold countdown-timer" 
+                                                  data-publish="{{ $item->publish_at->timestamp }}"
+                                                  data-id="{{ $item->id }}">
+                                                ⏱️ Calculating...
+                                            </span>
+                                        @elseif($item->status === 'published')
+                                            <span class="text-xs text-green-600">
+                                                ✅ Published {{ $item->publish_at->diffForHumans() }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                @else
+                                    <span class="text-gray-400">-</span>
+                                @endif
+                            </td>
+
+                            <td class="px-4 py-3 text-gray-700 max-w-md break-words">
                                 {!! Str::limit($item->content, 200) !!}
                             </td>
-                            <!-- Bagian Thumbnail di dalam tabel - Replace bagian ini di kode Anda -->
+                            
                             <td class="px-4 py-3 border border-gray-300">
                                 @if($item->thumbnail_url && filter_var($item->thumbnail_url, FILTER_VALIDATE_URL))
                                     <img 
@@ -119,7 +190,6 @@
                                         onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\'w-20 h-14 bg-gray-200 rounded border flex items-center justify-center\'><div class=\'text-center\'><div class=\'text-xs text-gray-500 leading-tight\'>Thumbnail<br>tidak<br>tersedia</div></div></div>';"
                                     >
                                 @elseif($item->images && $item->images->count() > 0)
-                                    <!-- Jika ada gambar uploaded, gunakan gambar pertama sebagai thumbnail -->
                                     <img 
                                         src="{{ asset('storage/' . $item->images->first()->image) }}" 
                                         alt="{{ $item->title }}" 
@@ -127,7 +197,6 @@
                                         onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\'w-20 h-14 bg-gray-200 rounded border flex items-center justify-center\'><div class=\'text-center\'><div class=\'text-xs text-gray-500 leading-tight\'>Thumbnail<br>tidak<br>tersedia</div></div></div>';"
                                     >
                                 @else
-                                    <!-- Placeholder ketika tidak ada thumbnail maupun gambar -->
                                     <div class="w-20 h-14 bg-gray-200 rounded border flex items-center justify-center">
                                         <div class="text-center">
                                             <svg class="w-6 h-6 text-gray-400 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,6 +207,7 @@
                                     </div>
                                 @endif
                             </td>
+                            
                             <td class="px-4 py-3 border border-gray-300">
                                 @if($item->images && $item->images->count() > 0)
                                     <div class="flex flex-wrap gap-1">
@@ -161,9 +231,7 @@
                                     <span class="text-gray-400 italic">No Images</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 border border-gray-300 text-gray-600">
-                                {{ $item->created_at->format('d M Y') }}
-                            </td>
+                            
                             <td class="px-4 py-3 border border-gray-300 space-x-2">
                                 <button onclick="openEditModal('{{ $item->id }}')" 
                                         class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-sm">
@@ -199,6 +267,14 @@
                                         <label class="block text-sm font-medium mb-2">Title <span class="text-red-500">*</span></label>
                                         <input type="text" name="title" id="edit-title-{{ $item->id }}" class="w-full border rounded p-2" value="{{ old('title', $item->title) }}">
                                         <div id="edit-title-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
+                                    </div>
+
+                                    {{-- Tanggal Publish --}}
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium mb-2">Tanggal Publish <span class="text-red-500">*</span></label>
+                                        <input type="date" name="tanggal" id="edit-tanggal-{{ $item->id }}" value="{{ old('tanggal', $item->publish_at ? $item->publish_at->format('Y-m-d') : '') }}" class="w-full border rounded p-2">
+                                        <p class="text-xs text-gray-500 mt-1">📅 Pilih hari ini untuk publish sekarang, atau pilih tanggal lain untuk publish jam 00:00 WIB</p>
+                                        <div id="edit-tanggal-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
                                     </div>
                                     
                                     <div class="mb-4">
@@ -343,6 +419,14 @@
                     <input type="text" name="title" id="create-title" value="{{ old('title') }}" class="w-full border rounded p-2">
                     <div id="create-title-error" class="text-red-600 text-sm mt-1 hidden"></div>
                 </div>
+
+                {{-- Tanggal Publish --}}
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Tanggal Publish <span class="text-red-500">*</span></label>
+                    <input type="date" name="tanggal" id="create-tanggal" value="{{ old('tanggal', now('Asia/Jakarta')->format('Y-m-d')) }}" class="w-full border rounded p-2">
+                    <p class="text-xs text-gray-500 mt-1">📅 Pilih hari ini untuk publish sekarang, atau pilih tanggal lain untuk publish jam 00:00 WIB</p>
+                    <div id="create-tanggal-error" class="text-red-600 text-sm mt-1 hidden"></div>
+                </div>
                 
                 <div class="mb-4">
                     <label class="block text-sm font-medium mb-2">Content <span class="text-red-500">*</span></label>
@@ -398,13 +482,29 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+
+    {{-- Custom CSS for Countdown Timer --}}
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .countdown-timer {
+            transition: all 0.3s ease;
+        }
+        .countdown-timer:hover {
+            transform: scale(1.05);
+        }
+    </style>
     
     <script>
         let createEditor, editEditors = {};
-        let removedImages = {}; // Track removed images per item
+        let removedImages = {};
 
         $(document).ready(function () {
-            // Initialize DataTable
             let table = $('#newsTable').DataTable({
                 responsive: {
                     breakpoints: [
@@ -442,32 +542,24 @@
                     orderable: false,
                     searchable: false
                 }],
-                order: [[1, 'asc']]
+                order: [[4, 'desc']]
             });
 
-            // Reindex nomor urut
             table.on('order.dt search.dt draw.dt', function () {
                 table.column(0, { search: 'applied', order: 'applied' }).nodes().each((cell, i) => {
                     cell.innerHTML = i + 1;
                 });
             }).draw();
 
-            // Auto open modal if validation error exists
             @if($errors->any())
                 openModal('createModal');
             @endif
 
-            // Initialize CKEditor for create modal
             initializeCreateEditor();
-
-            // Form validation handlers
             setupFormValidation();
-            
-            // Auto hide flash messages
             autoHideFlashMessages();
         });
 
-        // Image preview function
         function previewImages(input, previewContainerId) {
             const previewContainer = document.getElementById(previewContainerId);
             previewContainer.innerHTML = '';
@@ -493,39 +585,31 @@
             }
         }
 
-        // FIXED: Remove existing image function with proper tracking
         function removeExistingImage(imageId, itemId) {
             if (confirm('Yakin ingin menghapus gambar ini?')) {
                 const container = document.getElementById(`image-container-${imageId}`);
                 if (container) {
-                    // Visual feedback
                     container.style.opacity = '0.3';
                     container.innerHTML += '<div class="absolute inset-0 bg-red-100 bg-opacity-75 flex items-center justify-center z-10"><span class="text-red-600 text-sm font-bold">DIHAPUS</span></div>';
                     
-                    // Initialize removed images array if not exists
                     if (!removedImages[itemId]) {
                         removedImages[itemId] = [];
                     }
                     
-                    // Add to removed images list
                     if (!removedImages[itemId].includes(imageId)) {
                         removedImages[itemId].push(imageId);
                     }
                     
-                    // Update hidden input
                     const removeInput = document.getElementById(`remove-images-${itemId}`);
                     if (removeInput) {
                         removeInput.value = removedImages[itemId].join(',');
-                        console.log('Updated remove_images field:', removeInput.value);
                     }
                     
-                    // Update counter
                     updateImageCounter(itemId);
                 }
             }
         }
         
-        // Update image counter display
         function updateImageCounter(itemId) {
             const existingSection = document.getElementById(`existing-images-section-${itemId}`);
             if (existingSection) {
@@ -541,7 +625,6 @@
             }
         }
 
-        // Initialize CKEditor for create modal
         function initializeCreateEditor() {
             if (document.querySelector('#create-content')) {
                 ClassicEditor
@@ -556,7 +639,6 @@
                     })
                     .then(editor => {
                         createEditor = editor;
-                        console.log('Create editor initialized');
                     })
                     .catch(error => {
                         console.error('Create editor error:', error);
@@ -564,10 +646,9 @@
             }
         }
 
-        // Initialize CKEditor for edit modal
         function initializeEditEditor(itemId) {
             if (editEditors[itemId]) {
-                return; // Editor already initialized
+                return;
             }
 
             const editorElement = document.querySelector(`#edit-content-${itemId}`);
@@ -584,7 +665,6 @@
                     })
                     .then(editor => {
                         editEditors[itemId] = editor;
-                        console.log(`Edit editor initialized for item ${itemId}`);
                     })
                     .catch(error => {
                         console.error(`Edit editor error for item ${itemId}:`, error);
@@ -592,35 +672,35 @@
             }
         }
 
-        // Form validation setup
         function setupFormValidation() {
-            // Create form validation
             $('#createForm').on('submit', function(e) {
                 let isValid = true;
                 clearErrors('create');
 
-                // Title validation
                 const title = $('#create-title').val().trim();
                 if (!title) {
                     showError('create-title-error', 'Title harus diisi');
                     isValid = false;
                 }
 
-                // Content validation
+                const tanggal = $('#create-tanggal').val();
+                if (!tanggal) {
+                    showError('create-tanggal-error', 'Tanggal publish harus diisi');
+                    isValid = false;
+                }
+
                 const content = createEditor ? createEditor.getData().trim() : '';
                 if (!content || content === '<p>&nbsp;</p>' || content === '<p></p>') {
                     showError('create-content-error', 'Content harus diisi');
                     isValid = false;
                 }
 
-                // URL validation (optional but if filled, must be valid URL)
                 const url = $('#create-url').val().trim();
                 if (url && !isValidUrl(url)) {
                     showError('create-url-error', 'URL thumbnail harus berupa URL yang valid');
                     isValid = false;
                 }
 
-                // Image validation
                 const imageInput = document.getElementById('create-images');
                 if (imageInput && imageInput.files.length > 10) {
                     showError('create-images-error', 'Maksimal 10 gambar yang dapat diupload');
@@ -632,34 +712,35 @@
                 }
             });
 
-            // Edit form validation
             $('[id^="editForm-"]').on('submit', function(e) {
                 const itemId = this.id.split('-')[1];
                 let isValid = true;
                 clearErrors('edit', itemId);
 
-                // Title validation
                 const title = $(`#edit-title-${itemId}`).val().trim();
                 if (!title) {
                     showError(`edit-title-error-${itemId}`, 'Title harus diisi');
                     isValid = false;
                 }
 
-                // Content validation
+                const tanggal = $(`#edit-tanggal-${itemId}`).val();
+                if (!tanggal) {
+                    showError(`edit-tanggal-error-${itemId}`, 'Tanggal publish harus diisi');
+                    isValid = false;
+                }
+
                 const content = editEditors[itemId] ? editEditors[itemId].getData().trim() : '';
                 if (!content || content === '<p>&nbsp;</p>' || content === '<p></p>') {
                     showError(`edit-content-error-${itemId}`, 'Content harus diisi');
                     isValid = false;
                 }
 
-                // URL validation
                 const url = $(`#edit-url-${itemId}`).val().trim();
                 if (url && !isValidUrl(url)) {
                     showError(`edit-url-error-${itemId}`, 'URL thumbnail harus berupa URL yang valid');
                     isValid = false;
                 }
 
-                // Image validation
                 const imageInput = document.getElementById(`edit-images-${itemId}`);
                 if (imageInput && imageInput.files.length > 10) {
                     showError(`edit-images-error-${itemId}`, 'Maksimal 10 gambar yang dapat diupload');
@@ -672,14 +753,12 @@
             });
         }
 
-        // Utility functions
         function showError(elementId, message) {
             const errorElement = document.getElementById(elementId);
             if (errorElement) {
                 errorElement.textContent = message;
                 errorElement.classList.remove('hidden');
                 
-                // Add red border to input
                 const inputElement = errorElement.previousElementSibling;
                 if (inputElement && inputElement.tagName !== 'DIV') {
                     inputElement.classList.add('border-red-500');
@@ -689,7 +768,7 @@
 
         function clearErrors(type, itemId = '') {
             const suffix = itemId ? `-${itemId}` : '';
-            const fields = ['title', 'content', 'url', 'images'];
+            const fields = ['title', 'tanggal', 'content', 'url', 'images'];
             
             fields.forEach(field => {
                 const errorId = `${type}-${field}-error${suffix}`;
@@ -699,7 +778,6 @@
                     errorElement.textContent = '';
                 }
                 
-                // Remove red border
                 const inputId = `${type}-${field}${suffix}`;
                 const inputElement = document.getElementById(inputId);
                 if (inputElement) {
@@ -722,16 +800,13 @@
             
             if (id === 'createModal') {
                 clearErrors('create');
-                
-                // Reset form
                 document.getElementById('createForm').reset();
+                document.getElementById('create-tanggal').value = new Date().toISOString().split('T')[0];
                 
-                // Clear CKEditor
                 if (createEditor) {
                     createEditor.setData('');
                 }
                 
-                // Clear file input and preview
                 const fileInput = document.getElementById('create-images');
                 const preview = document.getElementById('create-preview');
                 if (fileInput) fileInput.value = '';
@@ -750,15 +825,12 @@
             modal.classList.remove('hidden');
             clearErrors('edit', itemId);
             
-            // IMPORTANT: Reset removed images tracking for this item
             removedImages[itemId] = [];
             const removeInput = document.getElementById(`remove-images-${itemId}`);
             if (removeInput) {
                 removeInput.value = '';
-                console.log(`Reset remove_images field for item ${itemId}`);
             }
             
-            // Reset existing images display - remove any "DIHAPUS" overlays
             const existingImages = document.querySelectorAll(`#editModal-${itemId} [id^="image-container-"]`);
             existingImages.forEach(container => {
                 container.style.opacity = '1';
@@ -768,16 +840,13 @@
                 }
             });
             
-            // Clear new images input and preview
             const fileInput = document.getElementById(`edit-images-${itemId}`);
             const preview = document.getElementById(`edit-preview-${itemId}`);
             if (fileInput) fileInput.value = '';
             if (preview) preview.innerHTML = '';
             
-            // Reset image counter
             updateImageCounter(itemId);
             
-            // Initialize CKEditor for this edit modal if not already initialized
             setTimeout(() => {
                 initializeEditEditor(itemId);
             }, 100);
@@ -787,7 +856,6 @@
             document.getElementById(id).classList.add('hidden');
         }
 
-        // Auto hide flash messages
         function autoHideFlashMessages() {
             setTimeout(() => {
                 let flash = document.getElementById('flash-message');
@@ -806,12 +874,55 @@
             }, 5000);
         }
 
-        // Debug: Show existing validation errors in console
-        @if($errors->any())
-            console.log('Validation errors detected:', @json($errors->all()));
-        @endif
+        // ============================================
+        // COUNTDOWN TIMER FOR SCHEDULED POSTS
+        // ============================================
+        function updateCountdownTimers() {
+            const timers = document.querySelectorAll('.countdown-timer');
+            const now = Math.floor(Date.now() / 1000);
 
-        // Image Zoom Modal Variables
+            timers.forEach(timer => {
+                const publishTimestamp = parseInt(timer.getAttribute('data-publish'));
+                const diff = publishTimestamp - now;
+
+                if (diff <= 0) {
+                    timer.innerHTML = '🔄 Publishing now...';
+                    timer.classList.remove('text-blue-600');
+                    timer.classList.add('text-green-600', 'animate-pulse');
+                    
+                    setTimeout(() => { location.reload(); }, 3000);
+                } else {
+                    const days = Math.floor(diff / 86400);
+                    const hours = Math.floor((diff % 86400) / 3600);
+                    const minutes = Math.floor((diff % 3600) / 60);
+                    const seconds = diff % 60;
+
+                    let timeString = '⏱️ ';
+                    
+                    if (days > 0) {
+                        timeString += `${days} hari ${hours} jam lagi`;
+                    } else if (hours > 0) {
+                        timeString += `${hours} jam ${minutes} menit lagi`;
+                    } else if (minutes > 0) {
+                        timeString += `${minutes} menit ${seconds} detik lagi`;
+                    } else {
+                        timeString += `${seconds} detik lagi`;
+                        timer.classList.add('animate-pulse', 'font-bold');
+                    }
+
+                    timer.innerHTML = timeString;
+                }
+            });
+        }
+
+        if (document.querySelectorAll('.countdown-timer').length > 0) {
+            updateCountdownTimers();
+            setInterval(updateCountdownTimers, 1000);
+        }
+
+        // ============================================
+        // IMAGE ZOOM MODAL FUNCTIONS
+        // ============================================
         let currentImages = [];
         let currentImageIndex = 0;
         let currentZoom = 1;
@@ -819,7 +930,6 @@
         let dragStart = { x: 0, y: 0 };
         let imagePosition = { x: 0, y: 0 };
 
-        // Open Image Modal with zoom functionality
         window.openImageModal = function(imageSrc, imageTitle, imagesArray) {
             currentImages = Array.isArray(imagesArray) ? imagesArray : [imageSrc];
             currentImageIndex = currentImages.indexOf(imageSrc);
@@ -831,31 +941,25 @@
             const indexElement = document.getElementById('imageIndex');
             const totalElement = document.getElementById('totalImages');
             
-            // Reset zoom and position
             currentZoom = 1;
             imagePosition = { x: 0, y: 0 };
             
-            // Update modal content
             zoomImage.src = imageSrc;
             zoomImage.alt = imageTitle;
             titleElement.textContent = imageTitle;
             indexElement.textContent = currentImageIndex + 1;
             totalElement.textContent = currentImages.length;
             
-            // Update navigation buttons visibility
             updateNavigationButtons();
             updateZoomLevel();
             updateImageTransform();
             
-            // Show modal
             modal.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
             
-            // Add event listeners
             addImageZoomEventListeners();
         };
 
-        // Close Image Modal
         window.closeImageModal = function() {
             const modal = document.getElementById('imageZoomModal');
             modal.classList.add('hidden');
@@ -863,7 +967,6 @@
             removeImageZoomEventListeners();
         };
 
-        // Navigate between images
         window.navigateImage = function(direction) {
             if (currentImages.length <= 1) return;
             
@@ -875,7 +978,6 @@
             const titleElement = document.getElementById('imageTitle');
             const indexElement = document.getElementById('imageIndex');
             
-            // Reset zoom and position for new image
             currentZoom = 1;
             imagePosition = { x: 0, y: 0 };
             
@@ -887,7 +989,6 @@
             updateZoomLevel();
         };
 
-        // Zoom Image
         window.zoomImage = function(delta) {
             const newZoom = Math.max(0.1, Math.min(5, currentZoom + delta));
             if (newZoom !== currentZoom) {
@@ -897,7 +998,6 @@
             }
         };
 
-        // Reset Zoom
         window.resetZoom = function() {
             currentZoom = 1;
             imagePosition = { x: 0, y: 0 };
@@ -905,19 +1005,16 @@
             updateZoomLevel();
         };
 
-        // Update image transform
         function updateImageTransform() {
             const zoomImage = document.getElementById('zoomImage');
             zoomImage.style.transform = `scale(${currentZoom}) translate(${imagePosition.x}px, ${imagePosition.y}px)`;
         }
 
-        // Update zoom level display
         function updateZoomLevel() {
             const zoomLevelElement = document.getElementById('zoomLevel');
             zoomLevelElement.textContent = Math.round(currentZoom * 100) + '%';
         }
 
-        // Update navigation buttons
         function updateNavigationButtons() {
             const prevBtn = document.getElementById('prevImageBtn');
             const nextBtn = document.getElementById('nextImageBtn');
@@ -931,31 +1028,24 @@
             }
         }
 
-        // Add event listeners for zoom modal
         function addImageZoomEventListeners() {
-            // Keyboard controls
             document.addEventListener('keydown', handleZoomKeydown);
             
-            // Mouse wheel zoom
             const imageContainer = document.getElementById('imageContainer');
             imageContainer.addEventListener('wheel', handleMouseWheel, { passive: false });
             
-            // Mouse drag
             const zoomImage = document.getElementById('zoomImage');
             zoomImage.addEventListener('mousedown', handleMouseDown);
             document.addEventListener('mousemove', handleMouseMove);
             document.addEventListener('mouseup', handleMouseUp);
             
-            // Touch events for mobile
             zoomImage.addEventListener('touchstart', handleTouchStart, { passive: false });
             document.addEventListener('touchmove', handleTouchMove, { passive: false });
             document.addEventListener('touchend', handleTouchEnd);
             
-            // Double click to reset zoom
             zoomImage.addEventListener('dblclick', resetZoom);
         }
 
-        // Remove event listeners
         function removeImageZoomEventListeners() {
             document.removeEventListener('keydown', handleZoomKeydown);
             
@@ -977,7 +1067,6 @@
             document.removeEventListener('touchend', handleTouchEnd);
         }
 
-        // Keyboard event handler
         function handleZoomKeydown(e) {
             switch(e.key) {
                 case 'Escape':
@@ -1007,14 +1096,12 @@
             }
         }
 
-        // Mouse wheel zoom
         function handleMouseWheel(e) {
             e.preventDefault();
             const delta = e.deltaY > 0 ? -0.1 : 0.1;
             zoomImage(delta);
         }
 
-        // Mouse drag handlers
         function handleMouseDown(e) {
             if (currentZoom > 1) {
                 isDragging = true;
@@ -1036,7 +1123,6 @@
             isDragging = false;
         }
 
-        // Touch handlers for mobile
         function handleTouchStart(e) {
             if (currentZoom > 1 && e.touches.length === 1) {
                 isDragging = true;
@@ -1061,7 +1147,6 @@
             isDragging = false;
         }
 
-        // Close modal when clicking outside image
         document.addEventListener('click', function(e) {
             const modal = document.getElementById('imageZoomModal');
             const imageContainer = document.getElementById('imageContainer');

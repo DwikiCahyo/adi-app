@@ -16,14 +16,21 @@ class Kernel extends ConsoleKernel
             ->everyMinute()
             ->withoutOverlapping()
             ->runInBackground()
-            ->appendOutputTo(storage_path('logs/scheduled-publish.log'));
+            ->sendOutputTo(storage_path('logs/scheduled-publish.log'));
         
         // Auto-publish scheduled resources (Latest Sermon)
         $schedule->command('resource:publish-scheduled')
             ->everyMinute()
             ->withoutOverlapping()
             ->runInBackground()
-            ->appendOutputTo(storage_path('logs/scheduled-publish.log'));
+            ->sendOutputTo(storage_path('logs/scheduled-publish.log'));
+
+        // Auto-publish scheduled news (News Feed)
+        $schedule->command('news:publish-scheduled')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->sendOutputTo(storage_path('logs/scheduled-publish.log'));
     }
 
     /**

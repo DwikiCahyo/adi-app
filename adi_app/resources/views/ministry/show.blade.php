@@ -107,7 +107,7 @@
             </h1>
 
             {{-- Category and Date Info --}}
-            <div class="flex flex-wrap items-center gap-3 mb-6 text-sm text-gray-600">
+            {{-- <div class="flex flex-wrap items-center gap-3 mb-6 text-sm text-gray-600">
                 
                 @if($ministry->created_at)
                     <span class="flex items-center">
@@ -117,7 +117,7 @@
                         {{ $ministry->created_at->format('M d, Y') }}
                     </span>
                 @endif
-            </div>
+            </div> --}}
 
             {{-- Main Content --}}
             <div class="prose prose-gray max-w-none">
