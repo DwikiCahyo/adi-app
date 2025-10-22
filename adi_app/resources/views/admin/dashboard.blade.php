@@ -123,34 +123,89 @@
                             {{-- Visibility Column --}}
                             <td class="px-4 py-3 border border-gray-300">
                                 @if($item->is_displayed_in_frontend)
-                                    <div class="flex items-center gap-2">
-                                        <span class="px-2 py-1 text-xs font-semibold text-blue-800 bg-blue-200 rounded-full flex items-center gap-1">
+                                    {{-- Status: Published & Displayed --}}
+                                    <div class="flex flex-col gap-2">
+                                        <span class="px-2 py-1 text-xs font-semibold text-blue-800 bg-blue-200 rounded-full inline-flex items-center gap-1">
                                             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                                 <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
                                                 <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
                                             </svg>
-                                            Ditampilkan
+                                            Tampil di Frontend
                                         </span>
-                                        <span class="text-xs text-blue-600 font-medium">Aktif</span>
+                                        
+                                        @if(str_contains($item->slug ?? '', '-keep-prev-'))
+                                            <span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full inline-flex items-center gap-1">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                </svg>
+                                                Post Lama Tetap Ada
+                                            </span>
+                                        @else
+                                            <span class="px-2 py-1 text-xs font-semibold text-orange-700 bg-orange-100 rounded-full inline-flex items-center gap-1">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                                </svg>
+                                                Post Lama Terhapus
+                                            </span>
+                                        @endif
+                                    </div>
+                                @elseif($item->status === 'scheduled')
+                                    {{-- Status: Scheduled --}}
+                                    <div class="flex flex-col gap-2">
+                                        <span class="px-2 py-1 text-xs font-semibold text-purple-700 bg-purple-100 rounded-full inline-flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                                            </svg>
+                                            Menunggu Publish
+                                        </span>
+                                        
+                                        @if(str_contains($item->slug ?? '', '-keep-prev-'))
+                                            <div class="flex flex-col gap-1">
+                                                <span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full inline-flex items-center gap-1">
+                                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    Post Lama Tetap Ada
+                                                </span>
+                                                <span class="text-xs text-green-600 pl-1">
+                                                    ℹ️ Saat publish, post lama tidak dihapus
+                                                </span>
+                                            </div>
+                                        @else
+                                            <div class="flex flex-col gap-1">
+                                                <span class="px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded-full inline-flex items-center gap-1">
+                                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    Post Lama Akan Terhapus
+                                                </span>
+                                                <span class="text-xs text-red-600 pl-1">
+                                                    ⚠️ Saat publish, post lama otomatis dihapus
+                                                </span>
+                                            </div>
+                                        @endif
                                     </div>
                                 @elseif($item->status === 'published')
-                                    <div class="flex items-center gap-2">
-                                        <span class="px-2 py-1 text-xs font-semibold text-gray-600 bg-gray-100 rounded-full flex items-center gap-1">
+                                    {{-- Status: Published but Not Displayed --}}
+                                    <div class="flex flex-col gap-2">
+                                        <span class="px-2 py-1 text-xs font-semibold text-gray-600 bg-gray-100 rounded-full inline-flex items-center gap-1">
                                             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"/>
                                                 <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z"/>
                                             </svg>
                                             Tidak Ditampilkan
                                         </span>
-                                        <span class="text-xs text-gray-500">Tidak Aktif (Hanya bisa di lihat Admin)</span>
+                                        <span class="text-xs text-gray-500 italic">
+                                            Hanya Admin yang bisa lihat
+                                        </span>
                                     </div>
-                                @elseif($item->status === 'scheduled')
-                                    <span class="px-2 py-1 text-xs font-semibold text-purple-600 bg-purple-100 rounded-full">
-                                        ⏳ Akan Ditampilkan Nanti
-                                    </span>
                                 @else
-                                    <span class="px-2 py-1 text-xs font-semibold text-gray-400 bg-gray-50 rounded-full">
-                                        📝 Draft
+                                    {{-- Status: Draft --}}
+                                    <span class="px-2 py-1 text-xs font-semibold text-gray-400 bg-gray-50 rounded-full inline-flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                                        </svg>
+                                        Draft
                                     </span>
                                 @endif
                             </td>
@@ -406,73 +461,96 @@
 
     {{-- Modal Create --}}
     <div 
-        id="createModal" 
-        class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4"
-        x-data="{ url: '{{ old('url', '') }}', hasFiles: {{ old('images') ? 'true' : 'false' }} }"
+    id="createModal" 
+    class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4"
+    x-data="{ url: '{{ old('url', '') }}', hasFiles: {{ old('images') ? 'true' : 'false' }} }"
     >
-        <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 flex flex-col max-h-[90vh] overflow-y-auto">
-            <h2 class="text-xl font-bold mb-4">Tambah News</h2>
-            <form id="createForm" action="{{ route('admin.dashboard.store') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <div class="mb-4">
-                    <label class="block text-sm font-medium mb-2">Title <span class="text-red-500">*</span></label>
-                    <input type="text" name="title" id="create-title" value="{{ old('title') }}" class="w-full border rounded p-2">
-                    <div id="create-title-error" class="text-red-600 text-sm mt-1 hidden"></div>
-                </div>
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 flex flex-col max-h-[90vh] overflow-y-auto">
+        <h2 class="text-xl font-bold mb-4">Tambah News</h2>
+        <form id="createForm" action="{{ route('admin.dashboard.store') }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Title <span class="text-red-500">*</span></label>
+                <input type="text" name="title" id="create-title" value="{{ old('title') }}" class="w-full border rounded p-2">
+                <div id="create-title-error" class="text-red-600 text-sm mt-1 hidden"></div>
+            </div>
 
-                {{-- Tanggal Publish --}}
-                <div class="mb-4">
-                    <label class="block text-sm font-medium mb-2">Tanggal Publish <span class="text-red-500">*</span></label>
-                    <input type="date" name="tanggal" id="create-tanggal" value="{{ old('tanggal', now('Asia/Jakarta')->format('Y-m-d')) }}" class="w-full border rounded p-2">
-                    <p class="text-xs text-gray-500 mt-1">📅 Pilih hari ini untuk publish sekarang, atau pilih tanggal lain untuk publish jam 00:00 WIB</p>
-                    <div id="create-tanggal-error" class="text-red-600 text-sm mt-1 hidden"></div>
-                </div>
-                
-                <div class="mb-4">
-                    <label class="block text-sm font-medium mb-2">Content <span class="text-red-500">*</span></label>
-                    <textarea name="content" id="create-content" class="ckeditor-create">{{ old('content') }}</textarea>
-                    <div id="create-content-error" class="text-red-600 text-sm mt-1 hidden"></div>
-                </div>
-                
-                {{-- Field URL Thumbnail (Conditional) --}}
-                <div class="mb-4" x-show="!hasFiles" x-transition>
-                    <label class="block text-sm font-medium mb-2">URL Thumbnail</label>
-                    <input type="text" name="url" id="create-url" value="{{ old('url') }}" class="w-full border rounded p-2" placeholder="Isi URL atau Upload Gambar di bawah" x-model="url">
-                    <div id="create-url-error" class="text-red-600 text-sm mt-1 hidden"></div>
-                </div>
-                
-                {{-- Field Upload Gambar (Conditional) --}}
-                <div class="mb-4" x-show="!url.trim()" x-transition>
-                    <label class="block text-sm font-medium mb-2">Upload Gambar</label>
+            {{-- Tanggal Publish --}}
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Tanggal Publish <span class="text-red-500">*</span></label>
+                <input type="date" name="tanggal" id="create-tanggal" value="{{ old('tanggal', now('Asia/Jakarta')->format('Y-m-d')) }}" class="w-full border rounded p-2">
+                <p class="text-xs text-gray-500 mt-1">📅 Pilih hari ini untuk publish sekarang, atau pilih tanggal lain untuk publish jam 00:00 WIB</p>
+                <div id="create-tanggal-error" class="text-red-600 text-sm mt-1 hidden"></div>
+            </div>
+
+            {{-- ✅ CHECKBOX: Keep Previous Posts --}}
+            <div class="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <label class="flex items-start cursor-pointer group">
                     <input 
-                        type="file" 
-                        name="images[]" 
-                        id="create-images" 
-                        class="w-full border rounded p-2" 
-                        multiple 
-                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                        @change="hasFiles = $event.target.files.length > 0"
-                        onchange="previewImages(this, 'create-preview')"
+                        type="checkbox" 
+                        name="keep_previous" 
+                        id="create-keep-previous" 
+                        value="1"
+                        {{ old('keep_previous') ? 'checked' : '' }}
+                        class="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     >
-                    <div class="text-xs text-gray-500 mt-1">
-                        Pilih maksimal 10 gambar. Format: JPG, PNG, GIF, WEBP. Maksimal 5MB per gambar.
+                    <div class="ml-3">
+                        <span class="text-sm font-medium text-gray-900 group-hover:text-blue-700">
+                            Pertahankan posting sebelumnya
+                        </span>
+                        <p class="text-xs text-gray-600 mt-1">
+                            ✅ <strong>Dicentang:</strong> Posting lama tetap ada, frontend menampilkan SEMUA berita<br>
+                            ❌ <strong>Tidak dicentang:</strong> Posting lama akan dihapus saat news baru publish
+                        </p>
                     </div>
-                    <div id="create-preview" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4"></div>
-                    <div id="create-images-error" class="text-red-600 text-sm mt-1 hidden"></div>
+                </label>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Content <span class="text-red-500">*</span></label>
+                <textarea name="content" id="create-content" class="ckeditor-create">{{ old('content') }}</textarea>
+                <div id="create-content-error" class="text-red-600 text-sm mt-1 hidden"></div>
+            </div>
+            
+            {{-- Field URL Thumbnail (Conditional) --}}
+            <div class="mb-4" x-show="!hasFiles" x-transition>
+                <label class="block text-sm font-medium mb-2">URL Thumbnail</label>
+                <input type="text" name="url" id="create-url" value="{{ old('url') }}" class="w-full border rounded p-2" placeholder="Isi URL atau Upload Gambar di bawah" x-model="url">
+                <div id="create-url-error" class="text-red-600 text-sm mt-1 hidden"></div>
+            </div>
+            
+            {{-- Field Upload Gambar (Conditional) --}}
+            <div class="mb-4" x-show="!url.trim()" x-transition>
+                <label class="block text-sm font-medium mb-2">Upload Gambar</label>
+                <input 
+                    type="file" 
+                    name="images[]" 
+                    id="create-images" 
+                    class="w-full border rounded p-2" 
+                    multiple 
+                    accept="image/jpeg,image/jpg,image/png,image/gif,webp"
+                    @change="hasFiles = $event.target.files.length > 0"
+                    onchange="previewImages(this, 'create-preview')"
+                >
+                <div class="text-xs text-gray-500 mt-1">
+                    Pilih maksimal 10 gambar. Format: JPG, PNG, GIF, WEBP. Maksimal 5MB per gambar.
                 </div>
-                
-                <div class="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg mb-4">
-                    <p x-show="url.trim()">⚠️ Anda tidak bisa mengupload gambar karena field URL Thumbnail terisi.</p>
-                    <p x-show="hasFiles">⚠️ Anda tidak bisa mengisi URL Thumbnail karena ada gambar yang akan diupload.</p>
-                    <p x-show="!url.trim() && !hasFiles">ℹ️ Silakan isi URL Thumbnail atau Upload Gambar (salah satu).</p>
-                </div>
-                
-                <div class="flex justify-end space-x-2 mt-4">
-                    <button type="button" onclick="closeModal('createModal')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Simpan</button>
-                </div>
-            </form>
-        </div>
+                <div id="create-preview" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4"></div>
+                <div id="create-images-error" class="text-red-600 text-sm mt-1 hidden"></div>
+            </div>
+            
+            <div class="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg mb-4">
+                <p x-show="url.trim()">⚠️ Anda tidak bisa mengupload gambar karena field URL Thumbnail terisi.</p>
+                <p x-show="hasFiles">⚠️ Anda tidak bisa mengisi URL Thumbnail karena ada gambar yang akan diupload.</p>
+                <p x-show="!url.trim() && !hasFiles">ℹ️ Silakan isi URL Thumbnail atau Upload Gambar (salah satu).</p>
+            </div>
+            
+            <div class="flex justify-end space-x-2 mt-4">
+                <button type="button" onclick="closeModal('createModal')" class="px-4 py-2 bg-gray-400 text-white rounded-lg">Batal</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Simpan</button>
+            </div>
+        </form>
+    </div>
     </div>
 
     {{-- Scripts --}}
@@ -802,6 +880,12 @@
                 clearErrors('create');
                 document.getElementById('createForm').reset();
                 document.getElementById('create-tanggal').value = new Date().toISOString().split('T')[0];
+                
+                // Reset checkbox ke unchecked (default: posting lama akan diganti)
+                const keepPreviousCheckbox = document.getElementById('create-keep-previous');
+                if (keepPreviousCheckbox) {
+                    keepPreviousCheckbox.checked = false;
+                }
                 
                 if (createEditor) {
                     createEditor.setData('');

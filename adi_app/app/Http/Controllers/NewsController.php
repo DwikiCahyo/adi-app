@@ -22,27 +22,27 @@ class NewsController extends Controller {
     /**
      * Display listing for frontend (hanya 1 news terbaru yang published)
      */
-    public function index(Request $request): View|JsonResponse
-    {
-        // Ambil HANYA 1 news terbaru yang published
-        $latestNews = News::with(['creator', 'updater', 'images'])
+    public function index(Request $request): View|JsonResponse{
+        // AUTO-PUBLISH scheduled news yang sudah waktunya
+        $this->checkAndPublishScheduledNews();
+        
+        // Ambil SEMUA news yang published dan aktif, urutkan dari terbaru
+        $news = News::with(['creator', 'updater', 'images'])
                     ->active()
                     ->published()
                     ->orderBy('publish_at', 'desc')
-                    ->first();
-
-        // Transform jadi collection untuk compatibility
-        $news = $latestNews ? collect([$latestNews])->map(function ($item) {
-            $item->thumbnail_url = $this->getVideoThumbnail($item->url);
-            $item->featured_image = $item->images->first()?->image 
-                ? Storage::url($item->images->first()->image) 
-                : null;
-            return $item;
-        }) : collect();
+                    ->get()
+                    ->map(function ($item) {
+                        $item->thumbnail_url = $this->getVideoThumbnail($item->url);
+                        $item->featured_image = $item->images->first()?->image 
+                            ? Storage::url($item->images->first()->image) 
+                            : null;
+                        return $item;
+                    });
 
         Log::info("News index request", [
             'total_news' => $news->count(),
-            'latest_news_id' => $latestNews ? $latestNews->id : null,
+            'latest_news_id' => $news->first()?->id ?? null,
             'expects_json' => $request->expectsJson(),
             'ip' => $request->ip(),
             'user_agent' => $request->userAgent()
@@ -58,6 +58,73 @@ class NewsController extends Controller {
         }
 
         return view('news.index', compact('news'));
+    }
+
+    /**
+ * Check dan publish scheduled news yang sudah waktunya
+ * Method ini dipanggil otomatis saat user buka halaman
+ */
+    private function checkAndPublishScheduledNews(){
+        $now = now('Asia/Jakarta');
+        
+        // Ambil scheduled news yang sudah waktunya publish
+        $scheduledNews = News::where('status', 'scheduled')
+            ->where('publish_at', '<=', $now)
+            ->get();
+        
+        if ($scheduledNews->isEmpty()) {
+            return;
+        }
+        
+        foreach ($scheduledNews as $news) {
+            DB::beginTransaction();
+            
+            try {
+                // Cek apakah ada flag keep_previous di title (kita encode di title sementara)
+                // Atau bisa pakai kolom lain yang kosong
+                $keepPrevious = str_contains($news->slug ?? '', '-keep-prev-');
+                
+                // Jika TIDAK keep previous, hapus posting lama
+                if (!$keepPrevious) {
+                    $deletedCount = News::active()
+                        ->published()
+                        ->where('id', '!=', $news->id)
+                        ->where('publish_at', '<', $news->publish_at)
+                        ->delete();
+                    
+                    Log::info("Previous news deleted on scheduled publish", [
+                        'news_id' => $news->id,
+                        'deleted_count' => $deletedCount
+                    ]);
+                }
+                
+                // Update status jadi published
+                $news->status = 'published';
+                
+                // Bersihkan flag dari slug jika ada
+                if ($keepPrevious) {
+                    $news->slug = str_replace('-keep-prev-', '-', $news->slug);
+                }
+                
+                $news->save();
+                
+                Log::info("Scheduled news auto-published", [
+                    'news_id' => $news->id,
+                    'title' => $news->title,
+                    'keep_previous' => $keepPrevious
+                ]);
+                
+                DB::commit();
+                
+            } catch (\Exception $e) {
+                DB::rollBack();
+                
+                Log::error("Failed to auto-publish scheduled news", [
+                    'news_id' => $news->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
     }
 
     /**
@@ -145,20 +212,22 @@ class NewsController extends Controller {
     /**
      * Display all news for admin (termasuk draft & scheduled + visibility status)
      */
-    public function NewsAdmin()
-    {
-        // Ambil ID news yang sedang ditampilkan di frontend
-        $displayedNewsId = News::active()
+    public function NewsAdmin(){
+        // ✅ PERBAIKAN: Ambil SEMUA ID news yang ditampilkan di frontend
+        // Termasuk news yang memiliki flag keep_previous
+        $displayedNewsIds = News::active()
             ->published()
             ->orderBy('publish_at', 'desc')
-            ->value('id');
+            ->get()
+            ->pluck('id')
+            ->toArray();
 
         $news = News::with(['creator', 'updater', 'images'])
             ->active()
             ->orderBy('publish_at', 'desc')
             ->get();
 
-        $news->transform(function ($item) use ($displayedNewsId) {
+        $news->transform(function ($item) use ($displayedNewsIds) {
             $item->embed_url = $item->url ? $this->convertVideoToEmbed($item->url) : null;
             $item->thumbnail_url = $item->url
                 ? $this->getVideoThumbnail($item->url)
@@ -176,8 +245,11 @@ class NewsController extends Controller {
                 ];
             });
             
-            // ⭐ TAMBAH PROPERTY: is_displayed_in_frontend
-            $item->is_displayed_in_frontend = ($item->id === $displayedNewsId && $item->status === 'published');
+            // ✅ PERBAIKAN: Cek apakah ID ada di list displayedNewsIds DAN status published
+            $item->is_displayed_in_frontend = (
+                in_array($item->id, $displayedNewsIds) && 
+                $item->status === 'published'
+            );
             
             return $item;
         });
@@ -188,8 +260,7 @@ class NewsController extends Controller {
     /**
      * Store new news with publish scheduling
      */
-    public function store(Request $request)
-    {
+    public function store(Request $request){
         DB::beginTransaction();
         
         try {
@@ -199,6 +270,7 @@ class NewsController extends Controller {
                 'url' => 'nullable|url',
                 'images.*' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120',
                 'tanggal' => 'required|date',
+                'keep_previous' => 'nullable|boolean',
             ]);
 
             $now = now('Asia/Jakarta');
@@ -213,6 +285,21 @@ class NewsController extends Controller {
             }
 
             $status = $publishDate->lte($now) ? 'published' : 'scheduled';
+            $keepPrevious = $request->has('keep_previous') && $request->keep_previous;
+            
+            // Hapus posting lama HANYA jika langsung publish DAN checkbox tidak dicentang
+            if (!$keepPrevious && $status === 'published') {
+                $deletedCount = News::active()
+                    ->published()
+                    ->where('publish_at', '<', $publishDate)
+                    ->delete();
+                
+                Log::info("Previous published news removed immediately", [
+                    'deleted_count' => $deletedCount,
+                    'keep_previous' => false,
+                    'status' => 'published'
+                ]);
+            }
             
             $dataToSave = [
                 'title' => $validatedData['title'],
@@ -226,6 +313,12 @@ class NewsController extends Controller {
         
             $news = News::create($dataToSave);
             
+            // ⚠️ PERBAIKAN: Simpan flag keep_previous untuk SEMUA status (bukan hanya scheduled)
+            if ($keepPrevious) {
+                $news->slug = $news->slug . '-keep-prev-' . time();
+                $news->save();
+            }
+            
             // Handle image uploads
             if ($request->hasFile('images')) {
                 $this->handleImageUploads($request->file('images'), $news);
@@ -236,14 +329,29 @@ class NewsController extends Controller {
                 'title' => $news->title,
                 'status' => $status,
                 'created_by' => auth()->id(),
-                'images_count' => $news->fresh()->images->count()
+                'images_count' => $news->fresh()->images->count(),
+                'keep_previous' => $keepPrevious,
+                'slug' => $news->slug
             ]);
             
             DB::commit();
 
-            $message = $status === 'scheduled' 
-                ? "News berhasil dibuat dan dijadwalkan publish pada {$publishDate->format('d M Y, H:i')} WIB!"
-                : "News berhasil dibuat dan langsung dipublish!";
+            // Dynamic success message
+            if ($status === 'scheduled') {
+                $message = "News berhasil dibuat dan dijadwalkan publish pada {$publishDate->format('d M Y, H:i')} WIB!";
+                if (!$keepPrevious) {
+                    $message .= " Posting sebelumnya akan dihapus otomatis saat news ini dipublish.";
+                } else {
+                    $message .= " Posting sebelumnya akan tetap ditampilkan bersama news baru.";
+                }
+            } else {
+                $message = "News berhasil dibuat dan langsung dipublish!";
+                if (!$keepPrevious) {
+                    $message .= " Posting sebelumnya telah dihapus.";
+                } else {
+                    $message .= " Posting sebelumnya tetap ditampilkan.";
+                }
+            }
         
             return redirect()->route('admin.dashboard')->with('success', $message);
             
