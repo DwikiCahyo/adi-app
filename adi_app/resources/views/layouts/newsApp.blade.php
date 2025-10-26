@@ -10,8 +10,8 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
         
         <link rel="shortcut icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
-        <link rel="apple-touch-icon" sizes="57x57" href="{{ asset('images/apple-icon-57x57.png') }}">
-        <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/apple-icon-180x180.png') }}">
+        <link rel="apple-touch-icon" sizes="57x57" href="{{ asset('Images/apple-icon-57x57.png') }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('Images/apple-icon-180x180.png') }}">
         
         <link rel="manifest" href="{{asset('manifest.json')}}">
         <meta name="theme-color" content="#ffffff">
@@ -301,7 +301,7 @@
 
                 {{-- Logo --}}
                 <div class="logo">
-                    <img src="{{ asset('Images/Logo.png') }}" alt="MyCDC7K Logo">
+                    <img src="{{ asset('Images/logo.png') }}" alt="MyCDC7K Logo">
                 </div>
 
                 <div class="logo-text">
@@ -329,18 +329,44 @@
             // Check if modal has been closed in this browsing session
             var modalClosed = sessionStorage.getItem('mycdc7k_modal_closed');
 
+            // Store a flag when user navigates within the site
+            var internalNavigation = sessionStorage.getItem('internal_navigation');
+
+            // Mark any internal navigation
+            document.addEventListener('click', function(e) {
+                // Check if clicked element or its parent is a link
+                var link = e.target.closest('a');
+                if (link && link.href && link.href.includes(window.location.host)) {
+                    // User clicked internal link
+                    sessionStorage.setItem('internal_navigation', 'true');
+                }
+            });
+
+            // Check if this is a return from internal navigation
+            window.addEventListener('pageshow', function(event) {
+                if (sessionStorage.getItem('internal_navigation') === 'true') {
+                    // This is from back button or internal navigation
+                    // Don't show modal, keep it closed
+                    sessionStorage.removeItem('internal_navigation');
+                }
+            });
+
             // Detect when user leaves the page (go to home screen or switch apps)
             document.addEventListener('visibilitychange', function() {
                 if (document.hidden) {
                     // User left the page/app
                     hasLeftPage = true;
                 } else if (hasLeftPage) {
-                    // User came back to the page/app
-                    // Reset the modal closed status
-                    sessionStorage.removeItem('mycdc7k_modal_closed');
-                    
-                    // Reload the page to show modal again
-                    window.location.reload();
+                    // User came back to the page/app from home screen/other apps
+                    // Only reset if NOT from internal navigation
+                    if (!sessionStorage.getItem('internal_navigation')) {
+                        // Reset the modal closed status
+                        sessionStorage.removeItem('mycdc7k_modal_closed');
+                        
+                        // Reload the page to show modal again
+                        window.location.reload();
+                    }
+                    hasLeftPage = false;
                 }
             });
 
@@ -350,9 +376,11 @@
             });
 
             window.addEventListener('focus', function() {
-                if (hasLeftPage && sessionStorage.getItem('mycdc7k_modal_closed')) {
-                    sessionStorage.removeItem('mycdc7k_modal_closed');
-                    window.location.reload();
+                if (hasLeftPage && !sessionStorage.getItem('internal_navigation')) {
+                    if (sessionStorage.getItem('mycdc7k_modal_closed')) {
+                        sessionStorage.removeItem('mycdc7k_modal_closed');
+                        window.location.reload();
+                    }
                 }
             });
 

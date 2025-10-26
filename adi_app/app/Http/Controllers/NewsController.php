@@ -80,19 +80,19 @@ class NewsController extends Controller {
             DB::beginTransaction();
             
             try {
-                // Cek apakah ada flag keep_previous di title (kita encode di title sementara)
-                // Atau bisa pakai kolom lain yang kosong
-                $keepPrevious = str_contains($news->slug ?? '', '-keep-prev-');
+                // Cek apakah news ini replaceable
+                $isReplaceable = str_contains($news->slug ?? '', '-replaceable-');
                 
-                // Jika TIDAK keep previous, hapus posting lama
-                if (!$keepPrevious) {
+                // Jika replaceable, hapus news replaceable lama
+                if ($isReplaceable) {
                     $deletedCount = News::active()
                         ->published()
                         ->where('id', '!=', $news->id)
                         ->where('publish_at', '<', $news->publish_at)
+                        ->where('slug', 'like', '%-replaceable-%')
                         ->delete();
                     
-                    Log::info("Previous news deleted on scheduled publish", [
+                    Log::info("Replaceable news deleted on scheduled publish", [
                         'news_id' => $news->id,
                         'deleted_count' => $deletedCount
                     ]);
@@ -100,18 +100,12 @@ class NewsController extends Controller {
                 
                 // Update status jadi published
                 $news->status = 'published';
-                
-                // Bersihkan flag dari slug jika ada
-                if ($keepPrevious) {
-                    $news->slug = str_replace('-keep-prev-', '-', $news->slug);
-                }
-                
                 $news->save();
                 
                 Log::info("Scheduled news auto-published", [
                     'news_id' => $news->id,
                     'title' => $news->title,
-                    'keep_previous' => $keepPrevious
+                    'is_replaceable' => $isReplaceable
                 ]);
                 
                 DB::commit();
@@ -272,7 +266,7 @@ class NewsController extends Controller {
                 'tanggal' => 'required|date',
                 'keep_previous' => 'nullable|boolean',
             ]);
-
+    
             $now = now('Asia/Jakarta');
             $selectedDate = Carbon::parse($validatedData['tanggal'])->setTimezone('Asia/Jakarta');
             
@@ -283,20 +277,21 @@ class NewsController extends Controller {
             } else {
                 $publishDate = $selectedDate->startOfDay();
             }
-
+    
             $status = $publishDate->lte($now) ? 'published' : 'scheduled';
-            $keepPrevious = $request->has('keep_previous') && $request->keep_previous;
+            $isReplaceable = $request->has('keep_previous') && $request->keep_previous;
             
-            // Hapus posting lama HANYA jika langsung publish DAN checkbox tidak dicentang
-            if (!$keepPrevious && $status === 'published') {
+            // 🎯 LOGIKA BARU: Jika news baru DICENTANG (replaceable), hapus news lama yang juga DICENTANG
+            if ($isReplaceable && $status === 'published') {
                 $deletedCount = News::active()
                     ->published()
                     ->where('publish_at', '<', $publishDate)
+                    ->where('slug', 'like', '%-replaceable-%') // Hapus hanya yang replaceable
                     ->delete();
                 
-                Log::info("Previous published news removed immediately", [
+                Log::info("Replaceable news removed", [
                     'deleted_count' => $deletedCount,
-                    'keep_previous' => false,
+                    'is_replaceable' => true,
                     'status' => 'published'
                 ]);
             }
@@ -313,9 +308,9 @@ class NewsController extends Controller {
         
             $news = News::create($dataToSave);
             
-            // ⚠️ PERBAIKAN: Simpan flag keep_previous untuk SEMUA status (bukan hanya scheduled)
-            if ($keepPrevious) {
-                $news->slug = $news->slug . '-keep-prev-' . time();
+            // 🎯 Simpan flag replaceable di slug
+            if ($isReplaceable) {
+                $news->slug = $news->slug . '-replaceable-' . time();
                 $news->save();
             }
             
@@ -330,26 +325,26 @@ class NewsController extends Controller {
                 'status' => $status,
                 'created_by' => auth()->id(),
                 'images_count' => $news->fresh()->images->count(),
-                'keep_previous' => $keepPrevious,
+                'is_replaceable' => $isReplaceable,
                 'slug' => $news->slug
             ]);
             
             DB::commit();
-
+    
             // Dynamic success message
             if ($status === 'scheduled') {
                 $message = "News berhasil dibuat dan dijadwalkan publish pada {$publishDate->format('d M Y, H:i')} WIB!";
-                if (!$keepPrevious) {
-                    $message .= " Posting sebelumnya akan dihapus otomatis saat news ini dipublish.";
+                if ($isReplaceable) {
+                    $message .= " News ini akan menggantikan news replaceable lama saat publish.";
                 } else {
-                    $message .= " Posting sebelumnya akan tetap ditampilkan bersama news baru.";
+                    $message .= " News ini bersifat permanen dan tidak akan tergantikan.";
                 }
             } else {
                 $message = "News berhasil dibuat dan langsung dipublish!";
-                if (!$keepPrevious) {
-                    $message .= " Posting sebelumnya telah dihapus.";
+                if ($isReplaceable) {
+                    $message .= " News replaceable lama telah digantikan.";
                 } else {
-                    $message .= " Posting sebelumnya tetap ditampilkan.";
+                    $message .= " News ini bersifat permanen dan tidak akan tergantikan.";
                 }
             }
         

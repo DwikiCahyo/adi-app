@@ -133,19 +133,19 @@
                                             Tampil di Frontend
                                         </span>
                                         
-                                        @if(str_contains($item->slug ?? '', '-keep-prev-'))
-                                            <span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full inline-flex items-center gap-1">
+                                        @if(str_contains($item->slug ?? '', '-replaceable-'))
+                                            <span class="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full inline-flex items-center gap-1">
                                                 <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
                                                 </svg>
-                                                Post Lama Tetap Ada
+                                                Checkbox Dicentang (Postingan yang tercentang akan keganti ke postingan terbaru)
                                             </span>
                                         @else
-                                            <span class="px-2 py-1 text-xs font-semibold text-orange-700 bg-orange-100 rounded-full inline-flex items-center gap-1">
+                                            <span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full inline-flex items-center gap-1">
                                                 <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                                    <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                                                 </svg>
-                                                Post Lama Terhapus
+                                                Checkbox Tidak Dicentang (Postingan yang tidak tercentang tidak akan keganti ke postingan terbaru)
                                             </span>
                                         @endif
                                     </div>
@@ -159,28 +159,25 @@
                                             Menunggu Publish
                                         </span>
                                         
-                                        @if(str_contains($item->slug ?? '', '-keep-prev-'))
+                                        @if(str_contains($item->slug ?? '', '-replaceable-'))
                                             <div class="flex flex-col gap-1">
-                                                <span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full inline-flex items-center gap-1">
+                                                <span class="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full inline-flex items-center gap-1">
                                                     <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
                                                     </svg>
-                                                    Post Lama Tetap Ada
+                                                    Checkbox Dicentang (Postingan yang tercentang akan keganti ke postingan terbaru)
                                                 </span>
-                                                <span class="text-xs text-green-600 pl-1">
-                                                    ℹ️ Saat publish, post lama tidak dihapus
+                                                <span class="text-xs text-blue-600 pl-1">
+                                                    🔄 Akan replace news replaceable lama
                                                 </span>
                                             </div>
                                         @else
                                             <div class="flex flex-col gap-1">
-                                                <span class="px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded-full inline-flex items-center gap-1">
+                                                <span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full inline-flex items-center gap-1">
                                                     <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                                        <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                                                     </svg>
-                                                    Post Lama Akan Terhapus
-                                                </span>
-                                                <span class="text-xs text-red-600 pl-1">
-                                                    ⚠️ Saat publish, post lama otomatis dihapus
+                                                    Checkbox Tidak Dicentang (Postingan yang tidak tercentang tidak akan keganti ke postingan terbaru)
                                                 </span>
                                             </div>
                                         @endif
@@ -200,13 +197,57 @@
                                         </span>
                                     </div>
                                 @else
-                                    {{-- Status: Draft --}}
+                                    {{-- Status: Draft
                                     <span class="px-2 py-1 text-xs font-semibold text-gray-400 bg-gray-50 rounded-full inline-flex items-center gap-1">
                                         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                             <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
                                         </svg>
                                         Draft
-                                    </span>
+                                    </span> --}}
+                                @endif
+                                @if($item->is_displayed_in_frontend)
+                                    {{-- Status: Published & Displayed --}}
+                                    <div class="flex flex-col gap-2">
+                                        
+                                        
+                                        @if(str_contains($item->slug ?? '', '-keep-prev-'))
+                                            {{-- <span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full inline-flex items-center gap-1">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                </svg>
+                                                Post Lama Tetap Ada
+                                            </span> --}}
+                                        @else
+                                            {{-- <span class="px-2 py-1 text-xs font-semibold text-orange-700 bg-orange-100 rounded-full inline-flex items-center gap-1">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                                </svg>
+                                                Post Lama Terhapus
+                                            </span> --}}
+                                        @endif
+                                    </div>
+                                @elseif($item->status === 'published')
+                                    {{-- Status: Published but Not Displayed --}}
+                                    <div class="flex flex-col gap-2">
+                                        <span class="px-2 py-1 text-xs font-semibold text-gray-600 bg-gray-100 rounded-full inline-flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"/>
+                                                <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z"/>
+                                            </svg>
+                                            Tidak Ditampilkan
+                                        </span>
+                                        <span class="text-xs text-gray-500 italic">
+                                            Hanya Admin yang bisa lihat
+                                        </span>
+                                    </div>
+                                @else
+                                    {{-- Status: Draft
+                                    <span class="px-2 py-1 text-xs font-semibold text-gray-400 bg-gray-50 rounded-full inline-flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                                        </svg>
+                                        Draft
+                                    </span> --}}
                                 @endif
                             </td>
 
@@ -499,8 +540,8 @@
                             Pertahankan posting sebelumnya
                         </span>
                         <p class="text-xs text-gray-600 mt-1">
-                            ✅ <strong>Dicentang:</strong> Posting lama tetap ada, frontend menampilkan SEMUA berita<br>
-                            ❌ <strong>Tidak dicentang:</strong> Posting lama akan dihapus saat news baru publish
+                            ✅ <strong>Dicentang:</strong> Postingan CDC News akan ke replace saat news baru publish<br>
+                            ❌ <strong>Tidak dicentang:</strong> Postingan lama (termasuk CDC News) tidak akan dihapus saat news baru publish
                         </p>
                     </div>
                 </label>
