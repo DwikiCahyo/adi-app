@@ -8,8 +8,8 @@
             title: '{{ $resource->title }}',
             embed: '{{ $resource->embed_url ?? '' }}',
             thumb: '{{ $resource->thumbnail_url ?? asset('images/default-thumbnail.jpg') }}',
-            content: `{!! nl2br(e($resource->content ?? '')) !!}`,
-            date: '{{ $resource->publish_at?->translatedFormat('d F Y') }}'
+            content: `{!! nl2br(e($resource->content ?? '')) !!}`
+            {{-- date: '{{ $resource->publish_at?->translatedFormat('d F Y') }}' --}}
         },
         recents: [
             @foreach ($related as $item)
@@ -18,8 +18,8 @@
                 title: '{{ $item->title }}',
                 embed: '{{ $item->embed_url ?? '' }}',
                 thumb: '{{ $item->thumbnail_url ?? asset('images/default-thumbnail.jpg') }}',
-                content: `{!! nl2br(e($item->content ?? '')) !!}`,
-                date: '{{ $item->publish_at?->translatedFormat('d F Y') }}'
+                content: `{!! nl2br(e($item->content ?? '')) !!}`
+                {{-- date: '{{ $item->publish_at?->translatedFormat('d F Y') }}' --}}
             },
             @endforeach
         ],
