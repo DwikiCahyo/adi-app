@@ -114,7 +114,10 @@
 
     <article class="prose prose-lg max-w-none">
         <header class="not-prose mb-8">
-            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight mb-4">{{ $news->title }}</h1>
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight">{{ $news->title }}</h1>
+            <div class="text-gray-700 text-justify leading-relaxed tracking-wide mb-4">
+                {{$news->publish_at?->translatedFormat('d F Y')}}
+            </div>
         </header>
         <div class="text-gray-700 text-justify leading-relaxed tracking-wide">
             {!! ($news->content) !!}

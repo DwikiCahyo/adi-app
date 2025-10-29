@@ -15,16 +15,25 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class NewsController extends Controller {
 
+    /**
+     * Display listing for frontend (hanya 1 news terbaru yang published)
+     */
     public function index(Request $request): View|JsonResponse{
+        // AUTO-PUBLISH scheduled news yang sudah waktunya
+        $this->checkAndPublishScheduledNews();
+        
+        // Ambil SEMUA news yang published dan aktif, urutkan dari terbaru
         $news = News::with(['creator', 'updater', 'images'])
                     ->active()
+                    ->published()
+                    ->orderBy('publish_at', 'desc')
                     ->get()
                     ->map(function ($item) {
                         $item->thumbnail_url = $this->getVideoThumbnail($item->url);
-                        // Add first image as featured image if exists
                         $item->featured_image = $item->images->first()?->image 
                             ? Storage::url($item->images->first()->image) 
                             : null;
@@ -33,6 +42,7 @@ class NewsController extends Controller {
 
         Log::info("News index request", [
             'total_news' => $news->count(),
+            'latest_news_id' => $news->first()?->id ?? null,
             'expects_json' => $request->expectsJson(),
             'ip' => $request->ip(),
             'user_agent' => $request->userAgent()
@@ -41,7 +51,7 @@ class NewsController extends Controller {
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'data'    => NewsResource::collection($news),
+                'data'    => $news->isNotEmpty() ? NewsResource::collection($news) : [],
                 'total'   => $news->count(),
                 'message' => 'Data news berhasil ditampilkan'
             ]);
@@ -51,23 +61,76 @@ class NewsController extends Controller {
     }
 
     /**
-     * Ambil thumbnail dari URL video
-     */
-     private function getVideoThumbnail($url){
-        if (empty($url)) return asset('images/default-thumbnail.jpg');
+ * Check dan publish scheduled news yang sudah waktunya
+ * Method ini dipanggil otomatis saat user buka halaman
+ */
+    private function checkAndPublishScheduledNews(){
+        $now = now('Asia/Jakarta');
         
-        if (preg_match('/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^\&\?]+)/', $url, $matches)) {
-            return 'https://img.youtube.com/vi/' . $matches[1] . '/hqdefault.jpg';
+        // Ambil scheduled news yang sudah waktunya publish
+        $scheduledNews = News::where('status', 'scheduled')
+            ->where('publish_at', '<=', $now)
+            ->get();
+        
+        if ($scheduledNews->isEmpty()) {
+            return;
         }
-
-        if (preg_match('/vimeo\.com\/(\d+)/', $url, $matches)) {
-            return 'https://vumbnail.com/' . $matches[1] . '.jpg';
+        
+        foreach ($scheduledNews as $news) {
+            DB::beginTransaction();
+            
+            try {
+                // Cek apakah news ini replaceable
+                $isReplaceable = str_contains($news->slug ?? '', '-replaceable-');
+                
+                // Jika replaceable, hapus news replaceable lama
+                if ($isReplaceable) {
+                    $deletedCount = News::active()
+                        ->published()
+                        ->where('id', '!=', $news->id)
+                        ->where('publish_at', '<', $news->publish_at)
+                        ->where('slug', 'like', '%-replaceable-%')
+                        ->delete();
+                    
+                    Log::info("Replaceable news deleted on scheduled publish", [
+                        'news_id' => $news->id,
+                        'deleted_count' => $deletedCount
+                    ]);
+                }
+                
+                // Update status jadi published
+                $news->status = 'published';
+                $news->save();
+                
+                Log::info("Scheduled news auto-published", [
+                    'news_id' => $news->id,
+                    'title' => $news->title,
+                    'is_replaceable' => $isReplaceable
+                ]);
+                
+                DB::commit();
+                
+            } catch (\Exception $e) {
+                DB::rollBack();
+                
+                Log::error("Failed to auto-publish scheduled news", [
+                    'news_id' => $news->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
         }
-
-        return asset('images/default-thumbnail.jpg');
     }
 
-    public function show(Request $request, News $news){
+    /**
+     * Display single news (frontend - hanya yang published)
+     */
+    public function show(Request $request, News $news)
+    {
+        // Cek apakah sudah published
+        if (!$news->isPublished()) {
+            abort(404, 'News belum dipublish atau tidak ditemukan.');
+        }
+
         $news->load(['creator', 'updater', 'images']);
 
         Log::info("News show request", [
@@ -83,7 +146,6 @@ class NewsController extends Controller {
             ? $this->convertVideoToEmbed($news->url)
             : null;
 
-        // Add image URLs for display
         $news->image_urls = $news->images->map(function ($image) {
             return [
                 'id' => $image->id,
@@ -104,9 +166,28 @@ class NewsController extends Controller {
     }
 
     /**
-     * Convert video link to embeddable link.
+     * Ambil thumbnail dari URL video
      */
-    private function convertVideoToEmbed($url){
+    private function getVideoThumbnail($url)
+    {
+        if (empty($url)) return asset('images/default-thumbnail.jpg');
+        
+        if (preg_match('/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^\&\?]+)/', $url, $matches)) {
+            return 'https://img.youtube.com/vi/' . $matches[1] . '/hqdefault.jpg';
+        }
+
+        if (preg_match('/vimeo\.com\/(\d+)/', $url, $matches)) {
+            return 'https://vumbnail.com/' . $matches[1] . '.jpg';
+        }
+
+        return asset('images/default-thumbnail.jpg');
+    }
+
+    /**
+     * Convert video link to embeddable link
+     */
+    private function convertVideoToEmbed($url)
+    {
         if (empty($url)) return null;
         
         if (preg_match('/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^\&\?]+)/', $url, $matches)) {
@@ -120,25 +201,36 @@ class NewsController extends Controller {
         return $url; 
     }
 
-    //ADMIN
+    //==================== ADMIN SECTION ====================
+
+    /**
+     * Display all news for admin (termasuk draft & scheduled + visibility status)
+     */
     public function NewsAdmin(){
+        // ✅ PERBAIKAN: Ambil SEMUA ID news yang ditampilkan di frontend
+        // Termasuk news yang memiliki flag keep_previous
+        $displayedNewsIds = News::active()
+            ->published()
+            ->orderBy('publish_at', 'desc')
+            ->get()
+            ->pluck('id')
+            ->toArray();
+
         $news = News::with(['creator', 'updater', 'images'])
             ->active()
+            ->orderBy('publish_at', 'desc')
             ->get();
 
-        // tambahin embed & thumbnail
-        $news->transform(function ($item) {
+        $news->transform(function ($item) use ($displayedNewsIds) {
             $item->embed_url = $item->url ? $this->convertVideoToEmbed($item->url) : null;
             $item->thumbnail_url = $item->url
                 ? $this->getVideoThumbnail($item->url)
                 : asset('images/default-thumbnail.jpg');
             
-            // Add featured image
             $item->featured_image = $item->images->first()?->image 
                 ? Storage::url($item->images->first()->image) 
                 : null;
             
-            // Add all image URLs
             $item->image_urls = $item->images->map(function ($image) {
                 return [
                     'id' => $image->id,
@@ -147,21 +239,80 @@ class NewsController extends Controller {
                 ];
             });
             
+            // ✅ PERBAIKAN: Cek apakah ID ada di list displayedNewsIds DAN status published
+            $item->is_displayed_in_frontend = (
+                in_array($item->id, $displayedNewsIds) && 
+                $item->status === 'published'
+            );
+            
             return $item;
         });
 
         return view('admin.dashboard', compact('news'));
     }
 
-    public function store(StoreNewsRequest $request){
+    /**
+     * Store new news with publish scheduling
+     */
+    public function store(Request $request){
         DB::beginTransaction();
         
         try {
-            $validatedData = $request->validated();
-            $validatedData['created_by'] = auth()->id();
-            $validatedData['updated_by'] = auth()->id();
+            $validatedData = $request->validate([
+                'title' => 'required|string|max:255',
+                'content' => 'required|string',
+                'url' => 'nullable|url',
+                'images.*' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120',
+                'tanggal' => 'required|date',
+                'keep_previous' => 'nullable|boolean',
+            ]);
+    
+            $now = now('Asia/Jakarta');
+            $selectedDate = Carbon::parse($validatedData['tanggal'])->setTimezone('Asia/Jakarta');
+            
+            // Logika publish
+            $publishDate;
+            if ($selectedDate->isToday()) {
+                $publishDate = $now;
+            } else {
+                $publishDate = $selectedDate->startOfDay();
+            }
+    
+            $status = $publishDate->lte($now) ? 'published' : 'scheduled';
+            $isReplaceable = $request->has('keep_previous') && $request->keep_previous;
+            
+            // 🎯 LOGIKA BARU: Jika news baru DICENTANG (replaceable), hapus news lama yang juga DICENTANG
+            if ($isReplaceable && $status === 'published') {
+                $deletedCount = News::active()
+                    ->published()
+                    ->where('publish_at', '<', $publishDate)
+                    ->where('slug', 'like', '%-replaceable-%') // Hapus hanya yang replaceable
+                    ->delete();
+                
+                Log::info("Replaceable news removed", [
+                    'deleted_count' => $deletedCount,
+                    'is_replaceable' => true,
+                    'status' => 'published'
+                ]);
+            }
+            
+            $dataToSave = [
+                'title' => $validatedData['title'],
+                'content' => $validatedData['content'],
+                'url' => $validatedData['url'] ?? null,
+                'publish_at' => $publishDate,
+                'status' => $status,
+                'created_by' => auth()->id(),
+                'updated_by' => auth()->id(),
+            ];
         
-            $news = News::create($validatedData);
+            $news = News::create($dataToSave);
+            
+            // 🎯 Simpan flag replaceable di slug
+            if ($isReplaceable) {
+                $news->slug = $news->slug . '-replaceable-' . time();
+                $news->save();
+            }
             
             // Handle image uploads
             if ($request->hasFile('images')) {
@@ -171,13 +322,33 @@ class NewsController extends Controller {
             Log::info("News created", [
                 'news_id' => $news->id,
                 'title' => $news->title,
+                'status' => $status,
                 'created_by' => auth()->id(),
-                'images_count' => $news->fresh()->images->count()
+                'images_count' => $news->fresh()->images->count(),
+                'is_replaceable' => $isReplaceable,
+                'slug' => $news->slug
             ]);
             
             DB::commit();
+    
+            // Dynamic success message
+            if ($status === 'scheduled') {
+                $message = "News berhasil dibuat dan dijadwalkan publish pada {$publishDate->format('d M Y, H:i')} WIB!";
+                if ($isReplaceable) {
+                    $message .= " News ini akan menggantikan news replaceable lama saat publish.";
+                } else {
+                    $message .= " News ini bersifat permanen dan tidak akan tergantikan.";
+                }
+            } else {
+                $message = "News berhasil dibuat dan langsung dipublish!";
+                if ($isReplaceable) {
+                    $message .= " News replaceable lama telah digantikan.";
+                } else {
+                    $message .= " News ini bersifat permanen dan tidak akan tergantikan.";
+                }
+            }
         
-            return redirect()->route('admin.dashboard')->with('success', 'News berhasil dibuat!');
+            return redirect()->route('admin.dashboard')->with('success', $message);
             
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -192,17 +363,42 @@ class NewsController extends Controller {
         }
     }
     
-    public function update(UpdateNewsRequest $request, News $news)
+    /**
+     * Update existing news with publish scheduling
+     */
+    public function update(Request $request, News $news)
     {
         DB::beginTransaction();
         try {
-            $validatedData = $request->validated();
-            $validatedData['updated_by'] = auth()->id();
+            $validatedData = $request->validate([
+                'title' => 'required|string|max:255',
+                'content' => 'required|string',
+                'url' => 'nullable|url',
+                'images.*' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120',
+                'tanggal' => 'required|date',
+            ]);
+
+            $now = now('Asia/Jakarta');
+            $selectedDate = Carbon::parse($validatedData['tanggal'])->setTimezone('Asia/Jakarta');
+            
+            // Logika publish
+            $publishDate;
+            if ($selectedDate->isToday()) {
+                $publishDate = $now;
+            } else {
+                $publishDate = $selectedDate->startOfDay();
+            }
+
+            $status = $publishDate->lte($now) ? 'published' : 'scheduled';
 
             $oldData = $news->only(['title', 'url', 'content', 'slug']);
 
-            // Update the news record
-            $news->update($validatedData);
+            // Update news
+            $news->fill($validatedData);
+            $news->publish_at = $publishDate;
+            $news->status = $status;
+            $news->updated_by = auth()->id();
+            $news->save();
 
             Log::info("News update process started", [
                 'news_id' => $news->id,
@@ -242,6 +438,7 @@ class NewsController extends Controller {
                 'news_id'   => $news->id,
                 'old_data'  => $oldData,
                 'new_data'  => $news->only(['title', 'url', 'content', 'slug']),
+                'new_status' => $status,
                 'updated_by'=> auth()->id(),
                 'removed_images' => $request->get('remove_images', 'none'),
                 'new_images_count' => $request->hasFile('images') ? count($request->file('images')) : 0,
@@ -250,7 +447,11 @@ class NewsController extends Controller {
 
             DB::commit();
 
-            return back()->with('success', 'News berhasil diedit! Total gambar: ' . $news->images->count());
+            $message = $status === 'scheduled' 
+                ? "News berhasil diupdate dan dijadwalkan publish pada {$publishDate->format('d M Y, H:i')} WIB!"
+                : "News berhasil diupdate dan dipublish!";
+
+            return back()->with('success', $message);
             
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -269,7 +470,11 @@ class NewsController extends Controller {
         }
     }
 
-    public function destroy(News $news){
+    /**
+     * Delete news
+     */
+    public function destroy(News $news)
+    {
         DB::beginTransaction();
         try {
             // Delete associated images from storage
@@ -308,7 +513,7 @@ class NewsController extends Controller {
      */
     private function handleImageUploads($images, News $news)
     {
-        $maxImages = 10; // Set maximum images per news
+        $maxImages = 10;
         $currentImageCount = $news->images()->count();
         
         Log::info("Handling image uploads", [
@@ -326,7 +531,7 @@ class NewsController extends Controller {
                     'current_count' => $currentImageCount + $uploadedCount,
                     'max_images' => $maxImages
                 ]);
-                break; // Stop if max images reached
+                break;
             }
             
             if ($image->isValid()) {
@@ -401,7 +606,6 @@ class NewsController extends Controller {
         $deletedCount = 0;
         foreach ($images as $image) {
             try {
-                // Delete from storage
                 if (Storage::disk('public')->exists($image->image)) {
                     Storage::disk('public')->delete($image->image);
                     Log::info("Image file deleted from storage", [
@@ -415,7 +619,6 @@ class NewsController extends Controller {
                     ]);
                 }
                 
-                // Delete from database
                 $image->delete();
                 $deletedCount++;
                 
