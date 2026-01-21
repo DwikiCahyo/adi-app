@@ -87,6 +87,7 @@
                         <th class="px-4 py-3 border border-gray-300">Agenda</th>
                         <th class="px-4 py-3 border border-gray-300">Title</th>
                         <th class="px-4 py-3 border border-gray-300">Topic & Content</th>
+                        <th class="px-4 py-3 border border-gray-300">Thumbnail</th>
                         <th class="px-4 py-3 border border-gray-300">Images</th>
                         <th class="px-4 py-3 border border-gray-300">Created At</th>
                         <th class="px-4 py-3 border border-gray-300 rounded-tr-lg">Action</th>
@@ -115,6 +116,23 @@
                                         </li>
                                     @endforeach
                                 </ul>
+                            </td>
+                            <td class="px-4 py-3 border border-gray-300">
+                                @if($item->thumbnail_url)
+                                    <img src="{{ $item->thumbnail_url }}" 
+                                         alt="{{ $item->title }}" 
+                                         class="w-20 h-14 object-cover rounded border" 
+                                         onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\'w-20 h-14 bg-gray-200 rounded border flex items-center justify-center\'><div class=\'text-center\'><div class=\'text-xs text-gray-500 leading-tight\'>Thumbnail<br>tidak<br>tersedia</div></div></div>';">
+                                @else
+                                    <div class="w-20 h-14 bg-gray-200 rounded border flex items-center justify-center">
+                                        <div class="text-center">
+                                            <svg class="w-6 h-6 text-gray-400 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                            <div class="text-xs text-gray-500 leading-tight">Thumbnail<br>tidak<br>tersedia</div>
+                                        </div>
+                                    </div>
+                                @endif
                             </td>
                             <td class="px-4 py-3 border border-gray-300">
                                 @if($item->images->count())
@@ -156,8 +174,14 @@
                             </td>
                         </tr>
 
-                        {{-- Modal Edit - UPDATED VERSION --}}
-                        <div id="editModal-{{ $item->id }}" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                        {{-- Modal Edit --}}
+                        <div id="editModal-{{ $item->id }}" 
+                             class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4"
+                             x-data="{ 
+                                url: '{{ old('url', $item->url) }}', 
+                                hasNewFiles: false, 
+                                hasExistingImages: {{ $item->images->count() > 0 ? 'true' : 'false' }} 
+                             }">
                             <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
                                 <h2 class="text-xl font-bold mb-4">Edit Event</h2>
                                 <form id="edit-form-{{ $item->id }}" action="{{ route('admin.event.update', $item->id) }}" method="POST" enctype="multipart/form-data">
@@ -180,12 +204,30 @@
                                         <div id="edit-title-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
                                     </div>
                                     
+                                    <div class="mb-4" x-show="!hasNewFiles && !hasExistingImages" x-transition>
+                                        <label class="block text-sm font-medium mb-2">URL Video/Thumbnail YouTube (Opsional)</label>
+                                        <input type="text" name="url" id="edit-url-{{ $item->id }}" 
+                                               value="{{ old('url', $item->url) }}" 
+                                               class="w-full border rounded p-2" 
+                                               placeholder="https://youtube.com/watch?v=..."
+                                               x-model="url">
+                                        <p class="text-xs text-gray-500 mt-1">Masukkan URL YouTube atau Vimeo</p>
+                                        <div id="edit-url-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
+                                        @if($item->embed_url)
+                                            <div class="mt-2">
+                                                <p class="text-xs text-gray-500">Preview embed saat ini:</p>
+                                                <div class="mt-1 w-full aspect-video rounded border overflow-hidden">
+                                                    <iframe src="{{ $item->embed_url }}" class="w-full h-full" allowfullscreen="" loading="lazy"></iframe>
+                                                </div>
+                                            </div>
+                                        @endif
+                                    </div>
+                                    
                                     <div id="edit-topics-{{ $item->id }}" class="mb-4 space-y-4">
                                         <label class="block text-sm font-medium">Topics & Content<span class="text-red-500">*</span></label>
                                         @if($item->topics && $item->topics->count() > 0)
                                             @foreach($item->topics as $tIndex => $topic)
                                                 <div class="border p-3 rounded topic-item space-y-2" data-topic-index="{{ $tIndex }}">
-                                                    {{-- Hidden ID untuk update --}}
                                                     <input type="hidden" name="topics[{{ $tIndex }}][id]" value="{{ $topic->id }}">
                                                     
                                                     <input type="text" 
@@ -206,7 +248,6 @@
                                                 </div>
                                             @endforeach
                                         @else
-                                            {{-- Jika belum ada topics, buat satu topic kosong --}}
                                             <div class="border p-3 rounded topic-item space-y-2" data-topic-index="0">
                                                 <input type="text" name="topics[0][topic]" class="w-full border rounded p-2" placeholder="Judul Topic (Opsional)">
                                                 <textarea id="edit-content-{{ $item->id }}-0" name="topics[0][content]" class="ckeditor-edit" data-item-id="{{ $item->id }}" data-topic-index="0"></textarea>
@@ -217,25 +258,63 @@
                                         @endif
                                     </div>
                                     
-                                    {{-- Error untuk topics edit --}}
                                     <div id="edit-topics-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden mb-4"></div>
-                                    
-                                    <div class="mb-4">
-                                        <label class="block text-sm font-medium mb-2">Upload Images Baru (Opsional)</label>
-                                        <input type="file" name="images[]" id="edit-images-{{ $item->id }}" class="w-full border rounded p-2" multiple accept="image/*">
-                                        <p class="text-xs text-gray-500 mt-1">Format yang didukung: JPG, PNG, GIF, WEBP. Maksimal 5MB per file.</p>
-                                        <div id="edit-images-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
-                                        @if($item->images->count())
-                                            <div class="mt-2">
-                                                <p class="text-xs text-gray-500 mb-2">Gambar saat ini:</p>
-                                                <div class="flex flex-wrap gap-2">
-                                                    @foreach($item->images as $image)
-                                                        <img src="{{ asset('storage/events/' . $image->image) }}" alt="Current Image" class="w-16 h-16 object-cover rounded border">
-                                                    @endforeach
-                                                </div>
-                                                <p class="text-xs text-red-500 mt-1">⚠️ Upload gambar baru akan mengganti semua gambar yang ada</p>
+
+                                    {{-- Existing Images --}}
+                                    @if($item->images && $item->images->count() > 0)
+                                        <div class="mb-4" id="existing-images-section-{{ $item->id }}">
+                                            <label class="block text-sm font-medium mb-2">Gambar Saat Ini ({{ $item->images->count() }} gambar)</label>
+                                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="existing-images-container-{{ $item->id }}">
+                                                @foreach($item->images as $image)
+                                                    <div class="relative group" id="image-container-{{ $image->id }}" data-image-id="{{ $image->id }}">
+                                                        <img 
+                                                            src="{{ asset('storage/events/' . $image->image) }}" 
+                                                            alt="Image {{ $loop->iteration }}" 
+                                                            class="w-full h-24 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                                                        >
+                                                        <button 
+                                                            type="button"
+                                                            onclick="removeExistingImage({{ $image->id }}, {{ $item->id }})"
+                                                            class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            title="Hapus gambar"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                        <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b truncate">
+                                                            {{ basename($image->image) }}
+                                                        </div>
+                                                    </div>
+                                                @endforeach
                                             </div>
-                                        @endif
+                                            <input type="hidden" name="remove_images" id="remove-images-{{ $item->id }}" value="">
+                                        </div>
+                                    @endif
+
+                                    {{-- Field Upload Gambar Baru (Conditional) --}}
+                                    <div class="mb-4" x-show="!url.trim()" x-transition>
+                                        <label class="block text-sm font-medium mb-2">Tambah Gambar Baru</label>
+                                        <input 
+                                            type="file" 
+                                            name="images[]" 
+                                            id="edit-images-{{ $item->id }}" 
+                                            class="w-full border rounded p-2" 
+                                            multiple 
+                                            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                                            @change="hasNewFiles = $event.target.files.length > 0"
+                                            onchange="previewImages(this, 'edit-preview-{{ $item->id }}')"
+                                        >
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            Pilih maksimal 10 gambar. Format: JPG, PNG, GIF, WEBP. Maksimal 5MB per gambar.
+                                        </div>
+                                        <div id="edit-preview-{{ $item->id }}" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4"></div>
+                                        <div id="edit-images-error-{{ $item->id }}" class="text-red-600 text-sm mt-1 hidden"></div>
+                                    </div>
+
+                                    <div class="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg mb-4">
+                                        <p x-show="url.trim()">⚠️ Anda tidak bisa mengupload/menambah gambar baru karena field URL terisi.</p>
+                                        <p x-show="hasNewFiles">⚠️ Anda tidak bisa mengisi URL karena ada gambar baru yang akan diupload.</p>
+                                        <p x-show="hasExistingImages && !url.trim() && !hasNewFiles">ℹ️ Anda tidak dapat mengisi URL karena sudah ada gambar. Hapus semua gambar jika ingin beralih ke URL.</p>
+                                        <p x-show="!url.trim() && !hasNewFiles && !hasExistingImages">ℹ️ Silakan isi URL atau Upload Gambar.</p>
                                     </div>
                                     
                                     <div class="flex justify-end space-x-2">
@@ -251,36 +330,34 @@
         </div>
     </div>
 
-    {{-- Modal Create - UPDATED VERSION --}}
-    <div id="createModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+    {{-- Modal Create --}}
+    <div id="createModal" 
+         class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4"
+         x-data="{ url: '{{ old('url', '') }}', hasFiles: {{ old('images') ? 'true' : 'false' }} }">
         <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
             <h2 class="text-xl font-bold mb-4">Tambah Event</h2>
             <form id="create-form" action="{{ route('admin.event.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
-                {{-- Agenda --}}
                 <div class="mb-4">
                     <label class="block text-sm font-medium mb-2">Agenda <span class="text-red-500">*</span></label>
                     <input type="text" name="agenda" id="create-agenda" value="{{ old('agenda') }}" class="w-full border rounded p-2" placeholder="Masukkan agenda event">
-                    <div id="create-agenda-error" class="text-red-600 text-sm mt-1 hidden">
-                        @error('agenda')
-                            {{ $message }}
-                        @enderror
-                    </div>
+                    <div id="create-agenda-error" class="text-red-600 text-sm mt-1 hidden"></div>
                 </div>
 
-                {{-- Title --}}
                 <div class="mb-4">
                     <label class="block text-sm font-medium mb-2">Title <span class="text-red-500">*</span></label>
                     <input type="text" name="title" id="create-title" value="{{ old('title') }}" class="w-full border rounded p-2" placeholder="Masukkan judul event">
-                    <div id="create-title-error" class="text-red-600 text-sm mt-1 hidden">
-                        @error('title')
-                            {{ $message }}
-                        @enderror
-                    </div>
+                    <div id="create-title-error" class="text-red-600 text-sm mt-1 hidden"></div>
                 </div>
 
-                {{-- Topics --}}
+                <div class="mb-4" x-show="!hasFiles" x-transition>
+                    <label class="block text-sm font-medium mb-2">URL Video/Thumbnail YouTube (Opsional)</label>
+                    <input type="text" name="url" id="create-url" value="{{ old('url') }}" class="w-full border rounded p-2" placeholder="https://youtube.com/watch?v=..." x-model="url">
+                    <p class="text-xs text-gray-500 mt-1">Masukkan URL YouTube atau Vimeo</p>
+                    <div id="create-url-error" class="text-red-600 text-sm mt-1 hidden"></div>
+                </div>
+
                 <div id="topics-container" class="mb-4 space-y-4">
                     <label class="block text-sm font-medium">Topics & Content<span class="text-red-500">*</span></label>
                     <div class="border p-3 rounded topic-item space-y-2" data-topic-index="0">
@@ -292,23 +369,26 @@
                     </div>
                 </div>
                 
-                {{-- Error untuk topics create --}}
                 <div id="create-topics-error" class="text-red-600 text-sm mt-1 hidden mb-4"></div>
 
                 <div class="flex justify-end mb-4">
                     <button type="button" onclick="addCreateTopic()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm">+ Tambah Topic</button>
                 </div>
 
-                {{-- Images --}}
-                <div class="mb-4">
+                <div class="mb-4" x-show="!url.trim()" x-transition>
                     <label class="block text-sm font-medium mb-2">Upload Images (Opsional)</label>
-                    <input type="file" name="images[]" id="create-images" class="w-full border rounded p-2" multiple accept="image/*">
-                    <p class="text-xs text-gray-500 mt-1">Format yang didukung: JPG, PNG, GIF, WEBP. Maksimal 5MB per file.</p>
-                    <div id="create-images-error" class="text-red-600 text-sm mt-1 hidden">
-                        @error('images.*')
-                            {{ $message }}
-                        @enderror
-                    </div>
+                    <input type="file" name="images[]" id="create-images" class="w-full border rounded p-2" multiple accept="image/*"
+                           @change="hasFiles = $event.target.files.length > 0"
+                           onchange="previewImages(this, 'create-preview')">
+                    <p class="text-xs text-gray-500 mt-1">Pilih maksimal 10 gambar. Format: JPG, PNG, GIF, WEBP. Maksimal 5MB per gambar.</p>
+                    <div id="create-preview" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4"></div>
+                    <div id="create-images-error" class="text-red-600 text-sm mt-1 hidden"></div>
+                </div>
+
+                <div class="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg mb-4">
+                    <p x-show="url.trim()">⚠️ Anda tidak bisa mengupload gambar karena field URL terisi.</p>
+                    <p x-show="hasFiles">⚠️ Anda tidak bisa mengisi URL karena ada gambar yang akan diupload.</p>
+                    <p x-show="!url.trim() && !hasFiles">ℹ️ Silakan isi URL atau Upload Gambar (salah satu).</p>
                 </div>
 
                 <div class="flex justify-end space-x-2">
@@ -340,9 +420,9 @@
     <script>
         let createEditors = {}, editEditors = {};
         let createTopicIndex = 0, editTopicIndexes = {};
-
+        let removedImages = {};
+    
         $(document).ready(function () {
-            // Initialize DataTable
             $('#eventTable').DataTable({
                 responsive: {
                     breakpoints: [
@@ -376,20 +456,16 @@
                     emptyTable: "Belum ada data event."
                 }
             });
-
-            // Open modal jika ada error validasi
+    
             @if($errors->any())
                 openModal('createModal');
             @endif
-
-            // Initialize create editors
+    
             initializeCreateEditors();
-
-            // Setup form validation
             setupFormValidation();
         });
-
-        // Initialize CKEditor for create form
+    
+        // ========== CKEditor Initialization ==========
         function initializeCreateEditors() {
             const editorIds = ['create-content-0'];
             editorIds.forEach(id => {
@@ -406,8 +482,7 @@
                 }
             });
         }
-
-        // Initialize CKEditor for edit form
+    
         function initializeEditEditors(itemId) {
             const editTopics = document.querySelectorAll(`#edit-topics-${itemId} .ckeditor-edit`);
             editTopics.forEach(textarea => {
@@ -427,8 +502,7 @@
                 }
             });
         }
-
-        // CKEditor configuration
+    
         function getEditorConfig() {
             return {
                 toolbar: {
@@ -460,8 +534,8 @@
                 }
             };
         }
-
-        // Add new topic in create form
+    
+        // ========== Topic Management ==========
         function addCreateTopic() {
             createTopicIndex++;
             const container = document.getElementById('topics-container');
@@ -476,8 +550,7 @@
                 </div>
             `;
             container.appendChild(div);
-
-            // Initialize CKEditor for new topic
+    
             const editorId = `create-content-${createTopicIndex}`;
             setTimeout(() => {
                 ClassicEditor
@@ -490,14 +563,12 @@
                     });
             }, 100);
         }
-
-        // Remove topic handler
+    
         document.addEventListener('click', function(e) {
             if(e.target.classList.contains('remove-topic')) {
                 const topicItem = e.target.closest('.topic-item');
                 const textarea = topicItem.querySelector('textarea[id^="create-content-"], textarea[id^="edit-content-"]');
                 if (textarea && textarea.id) {
-                    // Destroy CKEditor instance
                     if (createEditors[textarea.id]) {
                         createEditors[textarea.id].destroy();
                         delete createEditors[textarea.id];
@@ -511,14 +582,80 @@
             }
         });
 
-        // Form validation setup - UPDATED WITH CONTENT VALIDATION
+        // ========== Image Functions ==========
+        function previewImages(input, previewContainerId) {
+            const previewContainer = document.getElementById(previewContainerId);
+            previewContainer.innerHTML = '';
+
+            if (input.files && input.files.length > 0) {
+                Array.from(input.files).forEach((file, index) => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const imageDiv = document.createElement('div');
+                            imageDiv.className = 'relative group';
+                            imageDiv.innerHTML = `
+                                <img src="${e.target.result}" class="w-full h-24 object-cover rounded border" alt="Preview ${index + 1}">
+                                <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b truncate">
+                                    ${file.name}
+                                </div>
+                            `;
+                            previewContainer.appendChild(imageDiv);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+        }
+
+        function removeExistingImage(imageId, itemId) {
+            if (confirm('Yakin ingin menghapus gambar ini?')) {
+                const container = document.getElementById(`image-container-${imageId}`);
+                if (container) {
+                    container.style.opacity = '0.3';
+                    container.innerHTML += '<div class="absolute inset-0 bg-red-100 bg-opacity-75 flex items-center justify-center z-10"><span class="text-red-600 text-sm font-bold">DIHAPUS</span></div>';
+                    
+                    if (!removedImages[itemId]) {
+                        removedImages[itemId] = [];
+                    }
+                    
+                    if (!removedImages[itemId].includes(imageId)) {
+                        removedImages[itemId].push(imageId);
+                    }
+                    
+                    const removeInput = document.getElementById(`remove-images-${itemId}`);
+                    if (removeInput) {
+                        removeInput.value = removedImages[itemId].join(',');
+                    }
+                    
+                    updateImageCounter(itemId);
+                }
+            }
+        }
+
+        function updateImageCounter(itemId) {
+            const existingSection = document.getElementById(`existing-images-section-${itemId}`);
+            if (existingSection) {
+                const container = document.getElementById(`existing-images-container-${itemId}`);
+                const totalImages = container.querySelectorAll('[data-image-id]').length;
+                const removedCount = removedImages[itemId] ? removedImages[itemId].length : 0;
+                const remainingImages = totalImages - removedCount;
+                
+                const label = existingSection.querySelector('label');
+                if (label) {
+                    label.textContent = `Gambar Saat Ini (${remainingImages} dari ${totalImages} gambar)`;
+                }
+            }
+        }
+    
+        // ========== Form Validation ==========
         function setupFormValidation() {
-            // Create form validation
+            // Create Form Validation
             $('#create-form').on('submit', function(e) {
                 let isValid = true;
                 clearErrors('create');
-
-                // Update CKEditor data before validation
+    
+                // Sync CKEditor data to textarea
                 Object.keys(createEditors).forEach(editorId => {
                     if (createEditors[editorId]) {
                         const textarea = document.getElementById(editorId);
@@ -527,8 +664,8 @@
                         }
                     }
                 });
-
-                // Agenda validation
+    
+                // Validate Agenda
                 const agenda = $('#create-agenda').val().trim();
                 if (!agenda) {
                     showError('create-agenda-error', 'Agenda harus diisi');
@@ -540,8 +677,8 @@
                     showError('create-agenda-error', 'Agenda maksimal 255 karakter');
                     isValid = false;
                 }
-
-                // Title validation
+    
+                // Validate Title
                 const title = $('#create-title').val().trim();
                 if (!title) {
                     showError('create-title-error', 'Title harus diisi');
@@ -554,41 +691,49 @@
                     isValid = false;
                 }
 
-                // CONTENT VALIDATION - IMPROVED VERSION
+                // Validate URL and Images (Mutual Exclusive)
+                const url = $('#create-url').val().trim();
+                const imagesInput = document.getElementById('create-images');
+                
+                if (url && imagesInput.files.length > 0) {
+                    showError('create-url-error', 'URL dan Upload gambar tidak boleh diisi bersamaan');
+                    showError('create-images-error', 'URL dan Upload gambar tidak boleh diisi bersamaan');
+                    isValid = false;
+                }
+                
+                if (url && !isValidUrl(url)) {
+                    showError('create-url-error', 'URL harus berupa alamat yang valid');
+                    isValid = false;
+                }
+    
+                // Validate Topics Content
                 let hasValidContent = false;
-                let emptyContentCount = 0;
                 const topicItems = document.querySelectorAll('#topics-container .topic-item');
                 
                 topicItems.forEach((item, index) => {
                     const textarea = item.querySelector('textarea[name*="content"]');
                     if (textarea) {
                         const content = textarea.value.trim();
-                        // Remove HTML tags and check if there's actual content
                         const textContent = content.replace(/<[^>]*>/g, '').trim();
                         
                         if (textContent && textContent.length >= 10) {
                             hasValidContent = true;
                         } else if (textContent && textContent.length > 0 && textContent.length < 10) {
-                            // Content ada tapi terlalu pendek
                             showContentError(textarea.id, 'Content minimal 10 karakter');
                             isValid = false;
                         } else if (!textContent || textContent.length === 0) {
-                            // Content kosong
-                            emptyContentCount++;
                             showContentError(textarea.id, 'Content wajib diisi');
                             isValid = false;
                         }
                     }
                 });
-
-                // Jika semua content kosong atau tidak valid
+    
                 if (!hasValidContent && topicItems.length > 0) {
                     showError('create-topics-error', 'Setidaknya satu topic harus memiliki content yang valid (minimal 10 karakter)');
                     isValid = false;
                 }
-
-                // Images validation
-                const imagesInput = document.getElementById('create-images');
+    
+                // Validate Images
                 if (imagesInput.files.length > 0) {
                     for (let file of imagesInput.files) {
                         if (!file.type.startsWith('image/')) {
@@ -596,26 +741,26 @@
                             isValid = false;
                             break;
                         }
-                        if (file.size > 5 * 1024 * 1024) { // 5MB
+                        if (file.size > 5 * 1024 * 1024) {
                             showError('create-images-error', 'Ukuran file maksimal 5MB per gambar');
                             isValid = false;
                             break;
                         }
                     }
                 }
-
+    
                 if (!isValid) {
                     e.preventDefault();
                 }
             });
-
-            // Edit form validation - UPDATED VERSION
+    
+            // Edit Form Validation
             $('[id^="edit-form-"]').on('submit', function(e) {
                 const itemId = this.id.split('-')[2];
                 let isValid = true;
                 clearErrors('edit', itemId);
-
-                // Update CKEditor data before validation
+    
+                // Sync CKEditor data to textarea
                 Object.keys(editEditors).forEach(editorId => {
                     if (editEditors[editorId] && editorId.includes(`-${itemId}-`)) {
                         const textarea = document.getElementById(editorId);
@@ -624,8 +769,8 @@
                         }
                     }
                 });
-
-                // Agenda validation
+    
+                // Validate Agenda
                 const agenda = $(`#edit-agenda-${itemId}`).val().trim();
                 if (!agenda) {
                     showError(`edit-agenda-error-${itemId}`, 'Agenda harus diisi');
@@ -637,8 +782,8 @@
                     showError(`edit-agenda-error-${itemId}`, 'Agenda maksimal 255 karakter');
                     isValid = false;
                 }
-
-                // Title validation
+    
+                // Validate Title
                 const title = $(`#edit-title-${itemId}`).val().trim();
                 if (!title) {
                     showError(`edit-title-error-${itemId}`, 'Title harus diisi');
@@ -651,7 +796,22 @@
                     isValid = false;
                 }
 
-                // CONTENT VALIDATION FOR EDIT - NEW ADDITION
+                // Validate URL and Images (Mutual Exclusive)
+                const url = $(`#edit-url-${itemId}`).val().trim();
+                const imagesInput = document.getElementById(`edit-images-${itemId}`);
+                
+                if (url && imagesInput && imagesInput.files.length > 0) {
+                    showError(`edit-url-error-${itemId}`, 'URL dan Upload gambar tidak boleh diisi bersamaan');
+                    showError(`edit-images-error-${itemId}`, 'URL dan Upload gambar tidak boleh diisi bersamaan');
+                    isValid = false;
+                }
+                
+                if (url && !isValidUrl(url)) {
+                    showError(`edit-url-error-${itemId}`, 'URL harus berupa alamat yang valid');
+                    isValid = false;
+                }
+    
+                // Validate Topics Content
                 let hasValidContent = false;
                 const topicItems = document.querySelectorAll(`#edit-topics-${itemId} .topic-item`);
                 
@@ -669,15 +829,13 @@
                         }
                     }
                 });
-
-                // Check if at least one topic has valid content
+    
                 if (!hasValidContent) {
                     showError(`edit-topics-error-${itemId}`, 'Setidaknya satu topic harus memiliki content');
                     isValid = false;
                 }
-
-                // Images validation (for edit)
-                const imagesInput = document.getElementById(`edit-images-${itemId}`);
+    
+                // Validate Images
                 if (imagesInput && imagesInput.files.length > 0) {
                     for (let file of imagesInput.files) {
                         if (!file.type.startsWith('image/')) {
@@ -685,23 +843,22 @@
                             isValid = false;
                             break;
                         }
-                        if (file.size > 5 * 1024 * 1024) { // 5MB
+                        if (file.size > 5 * 1024 * 1024) {
                             showError(`edit-images-error-${itemId}`, 'Ukuran file maksimal 5MB per gambar');
                             isValid = false;
                             break;
                         }
                     }
                 }
-
+    
                 if (!isValid) {
                     e.preventDefault();
                 }
             });
         }
-
-        // New function to show content-specific errors
+    
+        // ========== Error Handling Functions ==========
         function showContentError(textareaId, message) {
-            // Create error element if it doesn't exist
             let errorId = textareaId + '-error';
             let errorElement = document.getElementById(errorId);
             
@@ -710,7 +867,6 @@
                 errorElement.id = errorId;
                 errorElement.className = 'text-red-600 text-sm mt-1';
                 
-                // Insert after the textarea's parent (CKEditor container)
                 const textarea = document.getElementById(textareaId);
                 if (textarea) {
                     const ckContainer = textarea.nextElementSibling;
@@ -725,7 +881,6 @@
             errorElement.textContent = message;
             errorElement.classList.remove('hidden');
             
-            // Add red border to CKEditor container
             const textarea = document.getElementById(textareaId);
             if (textarea) {
                 const ckContainer = textarea.nextElementSibling;
@@ -734,15 +889,13 @@
                 }
             }
         }
-
-        // Utility functions
+    
         function showError(elementId, message) {
             const errorElement = document.getElementById(elementId);
             if (errorElement) {
                 errorElement.textContent = message;
                 errorElement.classList.remove('hidden');
                 
-                // Add red border to input
                 const inputId = elementId.replace('-error', '');
                 const inputElement = document.getElementById(inputId);
                 if (inputElement) {
@@ -750,10 +903,10 @@
                 }
             }
         }
-
+    
         function clearErrors(type, itemId = '') {
             const suffix = itemId ? `-${itemId}` : '';
-            const fields = ['agenda', 'title', 'images', 'topics'];
+            const fields = ['agenda', 'title', 'url', 'images', 'topics'];
             
             fields.forEach(field => {
                 const errorId = `${type}-${field}-error${suffix}`;
@@ -763,7 +916,6 @@
                     errorElement.textContent = '';
                 }
                 
-                // Remove red border
                 const inputId = `${type}-${field}${suffix}`;
                 const inputElement = document.getElementById(inputId);
                 if (inputElement) {
@@ -771,28 +923,36 @@
                 }
             });
             
-            // Clear individual content errors
+            // Clear content errors
             const contentErrors = document.querySelectorAll(`[id$="-content-error"]`);
             contentErrors.forEach(error => {
                 error.classList.add('hidden');
                 error.textContent = '';
             });
             
-            // Remove red borders from CKEditor containers
+            // Reset CKEditor borders
             const ckEditors = document.querySelectorAll('.ck-editor');
             ckEditors.forEach(editor => {
                 editor.style.border = '';
             });
         }
-
+    
+        function isValidUrl(string) {
+            try {
+                const url = new URL(string);
+                return url.protocol === 'http:' || url.protocol === 'https:';
+            } catch (_) {
+                return false;
+            }
+        }
+    
+        // ========== Modal Functions ==========
         function openModal(id) {
             document.getElementById(id).classList.remove('hidden');
             clearErrors('create');
             
             if (id === 'createModal') {
-                // Reset form
                 document.getElementById('create-form').reset();
-                // Clear all CKEditor instances
                 Object.keys(createEditors).forEach(editorId => {
                     if (createEditors[editorId]) {
                         createEditors[editorId].setData('');
@@ -800,30 +960,39 @@
                 });
             }
         }
-
+    
         function openEditModal(itemId) {
             const modalId = `editModal-${itemId}`;
             document.getElementById(modalId).classList.remove('hidden');
             clearErrors('edit', itemId);
             
-            // Initialize CKEditor for this edit modal if not already initialized
+            removedImages[itemId] = [];
+            const removeInput = document.getElementById(`remove-images-${itemId}`);
+            if (removeInput) {
+                removeInput.value = '';
+            }
+            
+            const existingImages = document.querySelectorAll(`#editModal-${itemId} [id^="image-container-"]`);
+            existingImages.forEach(container => {
+                container.style.opacity = '1';
+                const overlay = container.querySelector('.absolute.inset-0');
+                if (overlay) {
+                    overlay.remove();
+                }
+            });
+            
+            updateImageCounter(itemId);
+            
             setTimeout(() => {
                 initializeEditEditors(itemId);
             }, 100);
         }
-
+    
         function closeModal(id) {
             document.getElementById(id).classList.add('hidden');
-            
-            if (id === 'createModal') {
-                clearErrors('create');
-            } else if (id.startsWith('editModal-')) {
-                const itemId = id.split('-')[1];
-                clearErrors('edit', itemId);
-            }
         }
-
-        // Auto hide flash message
+    
+        // ========== Flash Message ==========
         setTimeout(() => {
             let flash = document.getElementById('flash-message');
             if (flash) {
@@ -831,39 +1000,39 @@
                 setTimeout(() => flash.remove(), 500); 
             }
         }, 3000);
-
-        // Gallery functions
+    
+        // ========== Gallery Functions ==========
         let galleries = @json($event->mapWithKeys(fn($e) => [$e->id => $e->images->pluck('image')]));
         let currentGallery = [];
         let currentIndex = 0;
-
+    
         function openGallery(eventId, index) {
             currentGallery = galleries[eventId].map(img => '/storage/events/' + img);
             currentIndex = index;
             showGalleryImage();
             openModal('galleryModal');
         }
-
+    
         function showGalleryImage() {
             document.getElementById('galleryImage').src = currentGallery[currentIndex];
             document.getElementById('imageCounter').textContent = `${currentIndex + 1} / ${currentGallery.length}`;
         }
-
+    
         function nextImage() {
             if (currentGallery.length > 0) {
                 currentIndex = (currentIndex + 1) % currentGallery.length;
                 showGalleryImage();
             }
         }
-
+    
         function prevImage() {
             if (currentGallery.length > 0) {
                 currentIndex = (currentIndex - 1 + currentGallery.length) % currentGallery.length;
                 showGalleryImage();
             }
         }
-
-        // Show existing validation errors on page load
+    
+        // ========== Debug Errors ==========
         @if($errors->any())
             @foreach($errors->all() as $error)
                 console.log('Validation error: {{ $error }}');

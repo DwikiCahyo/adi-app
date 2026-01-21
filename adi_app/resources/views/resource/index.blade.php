@@ -52,6 +52,30 @@
             </div>
         </a>
 
+        {{-- Card 3:  I Confess My Faith--}}
+        <a href="{{ route('confession.faith.show') }}" class="flex flex-col rounded-lg overflow-hidden shadow bg-white hover:shadow-lg transition-all duration-200 hover:scale-[1.02] group cursor-pointer">
+            
+            <div class="block relative aspect-video overflow-hidden">
+                <img 
+                    src="{{ asset('Images/Hendra Zefanya.png') }}" 
+                    alt="Good News" 
+                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                >
+                {{-- Optional overlay for better visual feedback --}}
+                <div class="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity duration-200"></div>
+            </div>
+
+            {{-- Content --}}
+            <div class="p-6 flex flex-col flex-1">
+                <p class="text-gray-800 font-semibold text-lg leading-snug mb-4 group-hover:text-gray-900 transition-colors">
+                    Pengakuan Iman adalah bentuk peneguhan bagi umat Kristen yang menyatakan identitas diri mereka, apa yang mereka percaya dan siapa yang mereka percaya. pengakuan iman akan sangat menentukan identitas apa yang dia percayai dan juga dapat menentukan kehidupan nya di masa yang akan datang.
+                </p>
+                <span class="text-red-600 font-bold group-hover:text-red-700 group-hover:underline mt-auto transition-colors">
+                    READ MORE
+                </span>
+            </div>
+        </a>
+
     </div>
 </div>
 

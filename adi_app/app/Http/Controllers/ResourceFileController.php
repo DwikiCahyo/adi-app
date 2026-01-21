@@ -177,4 +177,9 @@ class ResourceFileController extends Controller
         Log::info("ResourceFile deleted", ['resourcefile_id' => $id, 'deleted_by' => auth()->id()]);
         return back()->with('success', 'Resource File berhasil dihapus!');
     }
+
+    public function showConfessMy()
+    {
+        return view('IConfessMyFaith.index');
+    }
 }
